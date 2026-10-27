@@ -1,0 +1,11 @@
+LE TEMPS DE RAFI — VERSION SPECTACULAIRE
+
+Base technique conservée : MindAR + A-Frame.
+V1 et V2 sont conservées. V3 est sélectionnée par défaut.
+Aucun fichier .mind n'a été modifié.
+
+Contenu :
+- index.html
+- cibles/0184.mind ... 0191.mind
+
+Pour tester la caméra, le site doit être servi en HTTPS (pas en simple file://).
