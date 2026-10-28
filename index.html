@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
-<title>Le temps de Rafi — spectaculaire + surgissement</title>
+<title>Le temps de Rafi — spectaculaire + œil arraché</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IM+Fell+DW+Pica:ital@0;1&family=Karla:wght@400;500;700&display=swap">
 <script src="https://cdn.jsdelivr.net/npm/aframe@1.5.0/dist/aframe-v1.5.0.min.js"></script>
@@ -180,7 +180,7 @@ h2 { font-family: var(--display); font-weight: 400; font-size: 24px; margin: 0; 
       <input type="range" id="gain" min="0.5" max="7" step="0.1" value="3.4"></label>
     <label for="debug" class="row" style="align-items:center"><span>Montrer les zones animées (V2)</span>
       <input type="checkbox" id="debug"></label>
-    <button class="chip" id="replay" type="button" hidden style="justify-self:start">Rejouer le surgissement</button>
+    <button class="chip" id="replay" type="button" hidden style="justify-self:start">Rejouer l’arrachement</button>
     <div class="muted" id="v2Info"></div>
     <div class="muted" id="sensorInfo">Capteurs : en attente…</div>
   </div>
@@ -318,22 +318,13 @@ const V3 = {
     ],
     splats:{from:[[0.64,0.72],[0.78,0.52]],start:3.1,every:2.4,count:6,reach:0.48} }
 };
-/* ---------- V4 : le surgissement (pour l'instant sur « Sous l'arbre » seulement) ----------
-   Déroulé en secondes de temps animé :
-   0–5 calme · 5–9,5 les branches poussent · 9–11,5 des feuilles se détachent et sortent du cadre
-   11–12,3 trois feuilles foncent vers l'objectif · 12,3 impact (vibration) · 13,5 feuilles retombées sur la table
-   La séquence reprend du début à 26 s. Pendant le surgissement (10,8 à 14 s), elle va jusqu'au bout même si l'on bouge. */
-const V4_0188 = { motion: 'Les branches poussent, le vent arrache des feuilles et elles te sautent au visage', surge: {
-    dur: 26, free: [10.8, 14],
-    // branches qui poussent vers la gauche, au-dessus de la crinière (fractions de l'image)
-    limbs: [
-      { p: [[0.4125, 0.1034], [0.25, 0.0552], [0.0438, 0.0966]], w0: 0.03, w1: 0.004 },
-      { p: [[0.375, 0.1517], [0.225, 0.2069], [0.0563, 0.2414]], w0: 0.022, w1: 0.0035 },
-      { p: [[0.325, 0.0828], [0.2125, 0.0621], [0.15, 0.0414]], w0: 0.015, w1: 0.003 } ],
-    grow: { start: 5, len: 4 },
-    flyers: { start: 9, every: 0.17, count: 13, life: 2.4 },
-    big: [ { size: 0.22, side: [0, 0], t0: 11.05 }, { size: 0.13, side: [-1, 0.55], t0: 10.85 }, { size: 0.16, side: [0.9, -0.7], t0: 11.2 } ],
-    approach: 1.15, hold: 0.4, fallen: 13.4 },
+/* ---------- V4 : l'œil arraché (sur « Sous l'arbre » seulement) ----------
+   Déroulé, en secondes de temps animé, à partir d'un calme de 5 à 8 s tiré au hasard à chaque cycle :
+   fissure 1,4 · décollement 1,1 · silence 0,65 · arrachement vers l'objectif 0,24 · nez à nez 0,38 · disparition 0,17
+   puis le trou noir reste 2 s et se referme en 1,5 s. De la fissure à la disparition, la séquence va jusqu'au bout même si l'on bouge. */
+const V4_0188 = { motion: 'Le papier se fissure autour de l’œil du cheval noir, s’arrache et te saute au visage',
+  tear: { poly: [[206,262],[226,254],[250,258],[264,272],[262,292],[246,304],[222,304],[206,290]], margin: 5,
+          calm: [5, 8], crack: 1.4, peel: 1.1, hush: 0.65, lunge: 0.24, hold: 0.38, exit: 0.17, stay: 2, close: 1.5, fill: 1.5 },
   fx: [
     { t: 'wave',    c: [0.78, 0.17], r: [0.20, 0.14], shape: 'rect', amp: 3, T: 2, p: [30, 30, 1, 0.6] },
     { t: 'wave',    c: [0.27, 0.20], r: [0.20, 0.12], shape: 'rect', amp: 5, T: 3.4, p: [8, 3, 0.3, 1] },
@@ -343,7 +334,7 @@ const VERSION_NOTES = {
   v1: 'V1 · des effets ajoutés par-dessus la gravure : pluie d’encre, feuilles qui tombent, herbe au vent.',
   v2: 'V2 · la gravure respire de l’intérieur : chaque image a ses propres mouvements, découpés dans le tirage.',
   v3: 'V3 · spectaculaire : mouvements amples, ombres qui débordent, arbres qui surgissent et éclaboussures d’encre.',
-  v4: 'V4 · surgissement : sur « Sous l’arbre », les branches poussent puis des feuilles sortent de la gravure et foncent vers toi. Les autres gravures jouent la V3.'
+  v4: 'V4 · arrachement : sur « Sous l’arbre », le papier se fissure autour de l’œil du cheval noir, puis le morceau s’arrache et fonce vers toi. Les autres gravures jouent la V3.'
 };
 const VSETS = { v2: V2, v3: V3, v4: V4 };
 function loadVersion() { try { return localStorage.getItem('rafi-version-spectaculaire') || 'v3'; } catch (e) { return 'v3'; } }
@@ -378,7 +369,7 @@ function setVersion(v) {
   });
   $('uploadBox').hidden = v !== 'v1';
   $('replay').hidden = v !== 'v4';
-  if (v === 'v4') {                            // le surgissement n'existe que sur « Sous l'arbre »
+  if (v === 'v4') {
     const i = TARGETS.findIndex(t => t.id === '0188');
     chosen = TARGETS[i];
     document.querySelectorAll('.print input')[i].checked = true;
@@ -729,161 +720,196 @@ function makeScratches(canvas, spec) {
   };
 }
 
-/* ---------- V4 · surgissement ---------- */
-/* une feuille d'encre : amande pointue, légèrement courbée, avec pétiole ; la nervure est grattée (le papier reparaît) */
-function leafPath(g, s) {
-  const L = s, hw = s * 0.17, bend = s * 0.06;
-  g.beginPath();
-  g.moveTo(-L / 2, 0);
-  g.bezierCurveTo(-L * 0.25, -hw * 1.25, L * 0.2, -bend - hw, L / 2, -bend * 1.6);
-  g.bezierCurveTo(L * 0.2, -bend + hw * 0.8, -L * 0.25, hw * 1.15, -L / 2, 0);
-  g.closePath();
+/* ---------- V4 · l'œil arraché ---------- */
+/* bord déchiré : on suit le contour en l'écartant, avec des dents irrégulières à plusieurs échelles */
+function tearShape(poly, margin, rnd) {
+  const cx = poly.reduce((a, p) => a + p[0], 0) / poly.length, cy = poly.reduce((a, p) => a + p[1], 0) / poly.length;
+  const pts = []; let walk = 0;
+  for (let i = 0; i < poly.length; i++) {
+    const [x0, y0] = poly[i], [x1, y1] = poly[(i + 1) % poly.length];
+    const n = Math.max(2, Math.round(Math.hypot(x1 - x0, y1 - y0) / 2));
+    for (let k = 0; k < n; k++) {
+      const t = k / n, x = x0 + (x1 - x0) * t, y = y0 + (y1 - y0) * t;
+      let dx = x - cx, dy = y - cy; const d = Math.hypot(dx, dy) || 1; dx /= d; dy /= d;
+      walk = walk * 0.85 + (rnd() - 0.5) * 3.2;
+      const tooth = rnd() < 0.2 ? (rnd() - 0.3) * 4.5 : (rnd() - 0.5) * 1.4;
+      const off = margin + walk + tooth;
+      pts.push([x + dx * off, y + dy * off]);
+    }
+  }
+  let a = 1e9, b = 1e9, c = -1e9, e = -1e9;
+  for (const [x, y] of pts) { a = Math.min(a, x); b = Math.min(b, y); c = Math.max(c, x); e = Math.max(e, y); }
+  return { pts, cx, cy, bb: [a - 4, b - 4, c + 4, e + 4] };
 }
-function leafCanvas(w, vein) {
-  const h = Math.round(w * 0.42), c = document.createElement('canvas'); c.width = w; c.height = h;
-  const g = c.getContext('2d'), L = w * 0.84;
-  g.save(); g.translate(w * 0.53, h * 0.56);
-  g.fillStyle = g.strokeStyle = 'rgb(10,10,10)';
-  leafPath(g, L); g.fill();
-  g.lineWidth = Math.max(2, h * 0.045); g.lineCap = 'round';
-  g.beginPath(); g.moveTo(-L / 2 - w * 0.07, h * 0.05); g.lineTo(-L / 2 + 2, 0); g.stroke();      // pétiole
-  if (vein) {
-    g.globalCompositeOperation = 'destination-out'; g.lineCap = 'round';
-    g.lineWidth = Math.max(1.5, h * 0.022);
-    g.beginPath(); g.moveTo(-L * 0.47, 0); g.quadraticCurveTo(0, -L * 0.05, L * 0.46, -L * 0.09); g.stroke();
-    g.lineWidth = Math.max(1, h * 0.011);
-    for (let i = 1; i < 8; i++) {
-      const t = i / 8, x = -L * 0.45 + L * 0.9 * t, y = -L * 0.09 * t * t - L * 0.01;
-      const k = Math.sin(Math.PI * Math.min(1, t * 1.05)) * L * 0.15;
-      g.beginPath(); g.moveTo(x, y); g.lineTo(x + L * 0.08, y - k); g.moveTo(x, y); g.lineTo(x + L * 0.07, y + k * 0.9); g.stroke();
+function tearTrace(g, pts, ox, oy, k) { g.beginPath(); pts.forEach(([x, y], i) => i ? g.lineTo((x - ox) * k, (y - oy) * k) : g.moveTo((x - ox) * k, (y - oy) * k)); g.closePath(); }
+/* fibres blanches du papier arraché, le long du bord */
+function tearFibers(g, sh, ox, oy, k, outward, rnd) {
+  g.save(); g.lineCap = 'round';
+  for (const [x, y] of sh.pts) {
+    let dx = x - sh.cx, dy = y - sh.cy; const d = Math.hypot(dx, dy) || 1; dx /= d; dy /= d;
+    const n = 1 + Math.floor(rnd() * 3);
+    for (let j = 0; j < n; j++) {
+      const l = (0.5 + rnd() * 2) * (outward ? 1 : -1), a = (rnd() - 0.5) * 1.2;
+      const ex = x + (dx * Math.cos(a) - dy * Math.sin(a)) * l, ey = y + (dy * Math.cos(a) + dx * Math.sin(a)) * l;
+      g.strokeStyle = `rgba(250,248,243,${0.55 + rnd() * 0.45})`; g.lineWidth = (0.3 + rnd() * 0.5) * k;
+      g.beginPath(); g.moveTo((x - ox) * k, (y - oy) * k); g.lineTo((ex - ox) * k, (ey - oy) * k); g.stroke();
     }
   }
   g.restore();
-  // grain du tirage : quelques lacunes dans l'encre
-  g.globalCompositeOperation = 'destination-out';
-  for (let i = 0; i < w * 0.8; i++) { g.globalAlpha = Math.random() * 0.3; g.fillRect(Math.random() * w, Math.random() * h, 1 + Math.random() * 2, 1); }
-  g.globalAlpha = 1; g.globalCompositeOperation = 'source-over';
-  return c;
 }
-/* branches qui poussent trait par trait, puis se couvrent de feuilles */
-function makeBranches(canvas, spec) {
-  const W = canvas.width, H = canvas.height, g = canvas.getContext('2d');
-  let seed = 5; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
-  const ease = v => v <= 0 ? 0 : v >= 1 ? 1 : 1 - Math.pow(1 - v, 2);
-  const limbs = spec.limbs.map((L, i) => {
-    const twigs = [];
-    for (let s = 0.16; s < 0.97; s += 0.09 + rnd() * 0.05)
-      for (const sg of [-1, 1]) if (rnd() < 0.85) twigs.push({ s, ang: Math.PI + sg * (0.45 + rnd() * 0.8), l: 0.026 + rnd() * 0.03,
-        leaves: [0, 1, 2].map(() => ({ dx: (rnd() - 0.5) * 0.014, dy: (rnd() - 0.5) * 0.012, len: 0.026 + rnd() * 0.02, rot: rnd() * 6.28 })) });
-    return { p: L.p, w0: L.w0, w1: L.w1, delay: spec.grow.start + i * 0.6, twigs };
-  });
-  const bz = (L, t) => { const [a, b, c] = L.p, u = 1 - t; return [(u * u * a[0] + 2 * u * t * b[0] + t * t * c[0]) * W, (u * u * a[1] + 2 * u * t * b[1] + t * t * c[1]) * H]; };
-  return function draw(at) {
-    g.clearRect(0, 0, W, H); g.fillStyle = g.strokeStyle = 'rgb(10,10,10)'; g.lineCap = 'round';
-    for (const L of limbs) {
-      const k = ease((at - L.delay) / spec.grow.len); if (k <= 0) continue;
-      const n = 32, left = [], right = [];
-      for (let i = 0; i <= n; i++) {
-        const t = i / n * k, [x, y] = bz(L, t), [x1, y1] = bz(L, Math.min(1, t + 0.01)), [x0, y0] = bz(L, Math.max(0, t - 0.01));
-        let tx = x1 - x0, ty = y1 - y0; const nn = Math.hypot(tx, ty) || 1; tx /= nn; ty /= nn;
-        const w = (L.w0 + (L.w1 - L.w0) * t / Math.max(k, 0.001)) * W / 2;
-        left.push([x - ty * w, y + tx * w]); right.push([x + ty * w, y - tx * w]);
-      }
-      g.beginPath(); left.forEach(([a, b], i) => i ? g.lineTo(a, b) : g.moveTo(a, b));
-      right.reverse().forEach(([a, b]) => g.lineTo(a, b)); g.closePath(); g.fill();
-      for (const tw of L.twigs) {
-        if (tw.s > k) continue;
-        const tk = Math.min(1, (k - tw.s) / 0.15), [bx, by] = bz(L, tw.s);
-        const ex = bx + Math.cos(tw.ang) * tw.l * W * tk, ey = by + Math.sin(tw.ang) * tw.l * W * 0.7 * tk;
-        g.lineWidth = Math.max(1.5, W * 0.0045); g.beginPath(); g.moveTo(bx, by); g.lineTo(ex, ey); g.stroke();
-        if (tk > 0.55) {
-          const lk = Math.min(1, (tk - 0.55) / 0.45);
-          for (const lf of tw.leaves) {
-            g.save(); g.translate(ex + lf.dx * W, Math.max(H * 0.03, ey + lf.dy * W)); g.rotate(lf.rot);
-            leafPath(g, lf.len * W * lk); g.fill(); g.restore();
-          }
-        }
-      }
-    }
+/* sons : craquements de papier, grand déchirement, ébrouement */
+let tearNoise = null;
+function tearOut() {
+  if (!audio || !S.soundOn) return null;
+  const ctx = audio.ctx;
+  if (!tearNoise) {
+    const len = ctx.sampleRate * 2, buf = ctx.createBuffer(1, len, ctx.sampleRate), d = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+    const comp = ctx.createDynamicsCompressor(); comp.threshold.value = -6; comp.ratio.value = 4; comp.connect(ctx.destination);
+    tearNoise = { buf, comp };
+  }
+  if (ctx.state === 'suspended') ctx.resume();
+  return { ctx, ...tearNoise };
+}
+function tearBurst(o, t0, dur, peak, f, q) {
+  const s = o.ctx.createBufferSource(); s.buffer = o.buf;
+  const bp = o.ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = f; bp.Q.value = q;
+  const g = o.ctx.createGain(); g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(peak, t0 + 0.004); g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+  s.connect(bp).connect(g).connect(o.comp); s.start(t0, Math.random()); s.stop(t0 + dur + 0.02);
+}
+function tearCrackle(dur, intensity) {
+  const o = tearOut(); if (!o) return; const t = o.ctx.currentTime;
+  for (let x = 0; x < dur;) { const k = x / dur; tearBurst(o, t + x, 0.012 + Math.random() * 0.03, (0.15 + 0.5 * k) * intensity, 2500 + Math.random() * 3000, 1.2); x += 0.07 * (1 - 0.8 * k) * (0.4 + Math.random()); }
+}
+function tearRip() {
+  const o = tearOut(); if (!o) return; const ctx = o.ctx, t = ctx.currentTime;
+  tearBurst(o, t, 0.22, 1.4, 1800, 0.5); tearBurst(o, t + 0.02, 0.3, 0.9, 4200, 0.8);
+  for (let i = 0; i < 14; i++) tearBurst(o, t + i * 0.012, 0.02, 0.9, 3000 + Math.random() * 4000, 1.5);
+  const puff = (t0, dur, peak, f0, f1) => {
+    const s = ctx.createBufferSource(); s.buffer = o.buf;
+    const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.Q.value = 0.9;
+    bp.frequency.setValueAtTime(f0, t0); bp.frequency.exponentialRampToValueAtTime(f1, t0 + dur);
+    const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(peak, t0 + 0.012); g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    const lfo = ctx.createOscillator(); lfo.frequency.value = 28; const lg = ctx.createGain(); lg.gain.value = peak * 0.6;
+    lfo.connect(lg).connect(g.gain); lfo.start(t0); lfo.stop(t0 + dur);
+    s.connect(bp).connect(g).connect(o.comp); s.start(t0, Math.random()); s.stop(t0 + dur + 0.05);
   };
+  puff(t + 0.05, 0.5, 1.5, 2200, 520); puff(t + 0.1, 0.4, 0.8, 900, 260);   // l'ébrouement de Rafi
+  const osc = ctx.createOscillator(); osc.frequency.setValueAtTime(90, t); osc.frequency.exponentialRampToValueAtTime(36, t + 0.25);
+  const og = ctx.createGain(); og.gain.setValueAtTime(0.0001, t); og.gain.exponentialRampToValueAtTime(1.1, t + 0.01); og.gain.exponentialRampToValueAtTime(0.0001, t + 0.3);
+  osc.connect(og).connect(o.comp); osc.start(t); osc.stop(t + 0.32);
 }
-/* feuilles en volume : elles quittent l'arbre, sortent du cadre, puis trois d'entre elles foncent vers l'objectif */
-function makeSurge(el, spec, aspect) {
+
+function makeTear(el, spec, img, aspect) {
   const root = el.object3D;
-  let seed = 9; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  let seed = 17; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  const sh = tearShape(spec.poly, spec.margin, rnd);
+  const [bx0, by0, bx1, by1] = sh.bb, bw = bx1 - bx0, bh = by1 - by0;
+  const kImg = (img.naturalWidth || img.width) / 800;
+  const loc = (px, py) => new THREE.Vector3(px / 800 - 0.5, aspect / 2 - py / 800, 0);
   const mkTex = c => { const t = new THREE.CanvasTexture(c); if ('colorSpace' in t) t.colorSpace = THREE.SRGBColorSpace; return t; };
-  const texBig = mkTex(leafCanvas(1024, true)), texSmall = mkTex(leafCanvas(256, false));
-  const geo = new THREE.PlaneGeometry(1, 0.42);
-  const mk = (tex, size, front) => {
-    const m = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false, depthTest: !front, side: THREE.DoubleSide, opacity: 0 }));
-    m.scale.setScalar(size); m.visible = false; if (front) m.renderOrder = 20; root.add(m); return m;
-  };
-  const loc = (fx, fy, z) => new THREE.Vector3(fx - 0.5, (0.5 - fy) * aspect, z || 0);
-  const flyers = Array.from({ length: spec.flyers.count }, (_, i) => ({
-    m: mk(texSmall, 0.06 + rnd() * 0.05, false), t0: spec.flyers.start + i * spec.flyers.every + rnd() * 0.2,
-    from: loc(0.55 + rnd() * 0.4, 0.05 + rnd() * 0.22, 0.004), dx: -0.15 - rnd() * 0.45, dy: 0.55 + rnd() * 0.5, sw: rnd() * 6.28, spin: (rnd() - 0.5) * 14
-  }));
-  const big = spec.big.map((b, i) => ({ ...b, m: mk(texBig, b.size, true), from: loc(0.62 + i * 0.08, 0.12 + i * 0.05, 0.01), spin: (rnd() - 0.5) * 3, tilt: rnd() * 6.28 }));
-  const fallenSpots = [[-0.16, 1.12, -20], [0.18, 1.2, 35], [0.62, 1.24, 160], [0.95, 1.14, 70], [1.13, 0.75, -50], [-0.13, 0.35, 120], [1.12, 0.22, 20], [0.4, 1.32, -100]];
-  const fallen = fallenSpots.map(([x, y, a], i) => {
-    const m = mk(texSmall, 0.08 + rnd() * 0.05, false); m.position.copy(loc(x, y, 0)); m.rotation.set(0, 0, a * Math.PI / 180);
-    return { m, t0: spec.fallen + i * 0.12 };
-  });
-  const cw = new THREE.Vector3(), cl = new THREE.Vector3(), rw = new THREE.Vector3(), tmp = new THREE.Vector3();
-  const fw = new THREE.Vector3(), rt = new THREE.Vector3(), up = new THREE.Vector3(), fromW = new THREE.Vector3(), endW = new THREE.Vector3(), exitW = new THREE.Vector3();
-  const sstep = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
-  let buzzed = false;
+  // le morceau arraché : la gravure découpée selon le bord déchiré, avec la tranche de fibres
+  const PK = 8, pc = document.createElement('canvas'); pc.width = Math.ceil(bw * PK); pc.height = Math.ceil(bh * PK);
+  const pg = pc.getContext('2d'); pg.imageSmoothingQuality = 'high';
+  pg.save(); tearTrace(pg, sh.pts, bx0, by0, PK); pg.clip();
+  pg.drawImage(img, bx0 * kImg, by0 * kImg, bw * kImg, bh * kImg, 0, 0, pc.width, pc.height); pg.restore();
+  pg.lineWidth = 0.7 * PK; pg.strokeStyle = 'rgba(248,246,240,.95)'; tearTrace(pg, sh.pts, bx0, by0, PK); pg.stroke();
+  tearFibers(pg, sh, bx0, by0, PK, true, rnd);
+  const pieceTex = mkTex(pc);
+  const geo = new THREE.PlaneGeometry(bw / 800, bh / 800);
+  const mat = new THREE.MeshBasicMaterial({ map: pieceTex, transparent: true, depthWrite: false, side: THREE.DoubleSide, opacity: 0 });
+  // charnière en haut du morceau : il se soulève par le bas, vers toi
+  const pivot = new THREE.Group(); pivot.position.copy(loc((bx0 + bx1) / 2, by0)); pivot.position.z = 0.002; root.add(pivot);
+  const piece = new THREE.Mesh(geo, mat); piece.position.y = -bh / 800 / 2; piece.renderOrder = 10; pivot.add(piece); pivot.visible = false;
+  const flyMat = new THREE.MeshBasicMaterial({ map: pieceTex, transparent: true, depthWrite: false, depthTest: false, side: THREE.DoubleSide });
+  const fly = new THREE.Mesh(geo, flyMat); fly.renderOrder = 30; fly.visible = false; root.add(fly);
+  // le trou et la fissure, sur un calque à plat
+  const HK = 1024 / 800, hc = document.createElement('canvas'); hc.width = 1024; hc.height = Math.round(1024 * aspect);
+  const hg = hc.getContext('2d'), holeTex = mkTex(hc);
+  const holeMat = new THREE.MeshBasicMaterial({ map: holeTex, transparent: true, depthWrite: false, opacity: 0 });
+  const hole = new THREE.Mesh(new THREE.PlaneGeometry(1, aspect), holeMat); hole.position.z = 0.0018; hole.renderOrder = 5; root.add(hole);
+  function drawHole(crack, open) {
+    hg.clearRect(0, 0, hc.width, hc.height);
+    const pts = sh.pts, n = pts.length;
+    if (open > 0) {
+      hg.save(); hg.globalAlpha = Math.min(1, open);
+      tearTrace(hg, pts, 0, 0, HK); hg.fillStyle = '#0b0a09'; hg.fill();       // l'ombre noire sous le papier
+      hg.lineWidth = 0.8 * HK; hg.strokeStyle = 'rgba(248,246,240,.9)'; hg.stroke();
+      let s2 = 5; tearFibers(hg, sh, 0, 0, HK, false, () => (s2 = (s2 * 16807) % 2147483647) / 2147483647);
+      hg.restore();
+    }
+    if (crack > 0 && open < 1) {
+      hg.save(); hg.strokeStyle = '#0b0a09'; hg.lineWidth = (0.8 + crack * 0.8) * HK; hg.lineJoin = 'miter';
+      const m = Math.floor(n * Math.min(1, crack));
+      for (let s = 0; s < 3; s++) {        // la fissure part de trois points à la fois
+        const st = Math.floor(n * s / 3), len = Math.floor(m / 3);
+        hg.beginPath();
+        for (let k = 0; k <= len; k++) { const [x, y] = pts[(st + k) % n]; k ? hg.lineTo(x * HK, y * HK) : hg.moveTo(x * HK, y * HK); }
+        hg.stroke();
+      }
+      hg.restore();
+    }
+    holeTex.needsUpdate = true;
+  }
+  drawHole(0, 0);
+
+  const sm = u => u <= 0 ? 0 : u >= 1 ? 1 : u * u * (3 - 2 * u), ease3 = u => u * u * u;
+  let c = 0, calm = 0, tl = null, done = {};
+  const cw = new THREE.Vector3(), rw = new THREE.Vector3(), fw = new THREE.Vector3(), rt = new THREE.Vector3(), up = new THREE.Vector3();
+  const fromW = new THREE.Vector3(), endW = new THREE.Vector3(), exitW = new THREE.Vector3(), tmp = new THREE.Vector3(), ws = new THREE.Vector3();
+  function restart(forceCalm) {
+    calm = forceCalm != null ? forceCalm : spec.calm[0] + Math.random() * (spec.calm[1] - spec.calm[0]);
+    let x = calm; tl = {};
+    for (const k of ['crack', 'peel', 'hush', 'lunge', 'hold', 'exit', 'stay', 'close']) { tl[k] = x; x += spec[k]; }
+    tl.end = x; c = 0; done = {};
+    pivot.visible = false; fly.visible = false; drawHole(0, 0); S.hush = false; S.hushSoft = false;
+  }
+  restart();
   return {
-    dur: spec.dur, free: spec.free,
-    tick(at, show) {
-      const cam = el.sceneEl.camera; if (!cam) return;
-      cam.getWorldPosition(cw); cl.copy(cw); root.worldToLocal(cl);
-      root.getWorldPosition(rw);
-      const dWorld = cw.distanceTo(rw) || 1;
-      const keep = Math.max(0.075, (cam.near || 0.01) * 2.5 / dWorld);   // distance gardée devant l'objectif
-      // feuilles qui s'envolent hors du cadre
-      for (const f of flyers) {
-        const u = (at - f.t0) / spec.flyers.life;
-        if (u <= 0 || u >= 1) { f.m.visible = false; continue; }
-        f.m.visible = true;
-        f.m.position.set(f.from.x + f.dx * u + Math.sin(u * 7 + f.sw) * 0.05 * u, f.from.y + f.dy * u * aspect * u, f.from.z + 0.12 * u);
-        f.m.rotation.set(Math.sin(u * 5 + f.sw) * 0.9, Math.cos(u * 4) * 0.6, f.spin * u);
-        f.m.material.opacity = show * (1 - sstep(0.75, 1, u));
+    restart,
+    isFree() { return c >= tl.crack && c < tl.stay; },
+    tick(step, show) {
+      c += step; if (c >= tl.end) restart();
+      holeMat.opacity = show; mat.opacity = show;
+      const cam = el.sceneEl.camera;
+      if (c < tl.crack) return;
+      if (c < tl.peel) {                                     // le papier se fissure autour de l'œil
+        if (!done.crack) { done.crack = 1; tearCrackle(spec.crack, 0.6); S.hushSoft = true; }
+        drawHole((c - tl.crack) / spec.crack, 0);
+      } else if (c < tl.hush) {                              // il se soulève, le trou noir apparaît
+        if (!done.peel) { done.peel = 1; tearCrackle(spec.peel, 1); pivot.visible = true; }
+        const u = sm((c - tl.peel) / spec.peel);
+        drawHole(1, u); pivot.rotation.x = -0.7 * u; pivot.position.z = 0.002 + 0.012 * u;
+      } else if (c < tl.lunge) {                             // silence : il ne tient plus qu'à un fil
+        if (!done.hush) { done.hush = 1; S.hush = true; drawHole(1, 1); }
+        pivot.rotation.x = -0.7 + Math.sin(c * 26) * 0.03;
+      } else if (c < tl.stay) {                              // arraché : il fonce vers l'objectif
+        if (!cam) return;
+        if (!done.rip) {
+          done.rip = 1; tearRip(); try { navigator.vibrate && navigator.vibrate([90, 30, 220]); } catch (e) {}
+          piece.getWorldPosition(fromW); pivot.visible = false; fly.visible = true;
+        }
+        cam.getWorldPosition(cw); root.getWorldPosition(rw); root.getWorldScale(ws);
+        const dWorld = cw.distanceTo(rw) || 1;
+        const dStop = Math.max(0.075, (cam.near || 0.01) * 2.5 / dWorld) * dWorld;
+        cam.getWorldDirection(fw);
+        const me = cam.matrixWorld.elements; rt.set(me[0], me[1], me[2]).normalize(); up.set(me[4], me[5], me[6]).normalize();
+        endW.copy(cw).addScaledVector(fw, dStop).addScaledVector(up, -dStop * 0.05);
+        // taille pour qu'il déborde de l'écran une fois devant l'objectif
+        const visH = 2 * dStop * Math.tan((cam.fov || 50) * Math.PI / 360), visW = visH * (cam.aspect || 0.5);
+        const big = (visW * spec.fill) / (bw / 800 * ws.x);
+        let p, sc, op = 1, jx = 0, jy = 0, rz = 0;
+        if (c < tl.hold) { const u = (c - tl.lunge) / spec.lunge; p = ease3(u); sc = 1 + (big - 1) * p; tmp.copy(fromW).lerp(endW, p); rz = -0.15 * p; }
+        else if (c < tl.exit) { const u = (c - tl.hold) / spec.hold; sc = big * (1 + 0.015 * Math.sin(u * 20)); tmp.copy(endW); rz = -0.15 + Math.sin(u * 31) * 0.03;
+          jx = Math.sin(u * 47) * 0.012 * dStop; jy = Math.cos(u * 41) * 0.01 * dStop; tmp.addScaledVector(rt, jx).addScaledVector(up, jy); }
+        else { const u = Math.min(1, (c - tl.exit) / spec.exit); exitW.copy(cw).addScaledVector(fw, -dStop * 0.3); tmp.copy(endW).lerp(exitW, u); sc = big * (1 + 0.6 * u); op = 1 - u; rz = -0.15; }
+        root.worldToLocal(tmp); fly.position.copy(tmp);
+        fly.scale.setScalar(sc); fly.lookAt(cw); fly.rotateZ(rz);
+        flyMat.opacity = op * show;
+      } else {                                              // le trou reste, puis se referme
+        if (!done.rest) { done.rest = 1; fly.visible = false; S.hush = false; S.hushSoft = false; }
+        if (c >= tl.close) { const u = sm((c - tl.close) / spec.close); drawHole(1 - u, 1 - u); }
       }
-      // trois feuilles vers l'objectif : lentes au départ, puis soudaines.
-      // Elles visent un point juste devant l'objectif, sur son axe : la feuille centrale remplit l'écran.
-      cam.getWorldDirection(fw);
-      const me = cam.matrixWorld.elements;
-      rt.set(me[0], me[1], me[2]).normalize(); up.set(me[4], me[5], me[6]).normalize();
-      const dStop = keep * dWorld;
-      for (const b of big) {
-        const u = (at - b.t0) / spec.approach, endHold = 1 + spec.hold / spec.approach;
-        if (u <= 0 || u > endHold + 0.25) { b.m.visible = false; continue; }
-        fromW.copy(b.from); root.localToWorld(fromW);
-        endW.copy(cw).addScaledVector(fw, dStop).addScaledVector(rt, b.side[0] * dStop * 1.1).addScaledVector(up, b.side[1] * dStop * 1.1);
-        if (u < 1) tmp.copy(fromW).lerp(endW, Math.pow(u, 2.8));
-        else if (u < endHold) tmp.copy(endW);
-        else { exitW.copy(cw).addScaledVector(fw, -dStop * 0.5).addScaledVector(rt, b.side[0] * dStop).addScaledVector(up, b.side[1] * dStop);
-               tmp.copy(endW).lerp(exitW, Math.min(1, (u - endHold) / 0.2)); }   // elle passe l'objectif et disparaît
-        root.worldToLocal(tmp);
-        b.m.position.copy(tmp);
-        b.m.visible = true;
-        b.m.lookAt(cw);
-        const flutter = u >= 1 && u < endHold ? Math.sin(at * 30) * 0.05 : 0;
-        b.m.rotateZ(b.tilt + b.spin * Math.min(u, 1) + flutter);
-        b.m.material.opacity = show;
-      }
-      // impact : le téléphone vibre (Android)
-      const hit = big[0].t0 + spec.approach;
-      if (at >= hit && at < hit + 0.3 && !buzzed) { buzzed = true; try { navigator.vibrate && navigator.vibrate([70, 40, 200]); } catch (e) {} }
-      if (at < hit) buzzed = false;
-      // feuilles retombées sur la table, autour de la gravure
-      for (const f of fallen) {
-        const k = sstep(f.t0, f.t0 + 0.5, at);
-        f.m.visible = k > 0; f.m.position.z = 0.05 * (1 - k); f.m.material.opacity = show * k;
-      }
-      // rafale : monte avec les feuilles, culmine à l'impact
-      S.gust = sstep(8.5, hit, at) * (1 - sstep(hit + 0.5, hit + 3, at));
     }
   };
 }
@@ -1045,11 +1071,7 @@ AFRAME.registerComponent('rafi-v2', {
       const span = 1, cv = document.createElement('canvas'); cv.width = 1536; cv.height = Math.round(1536 * S.aspect);
       addLayer(makeSplats(cv, D.splats, S.aspect, span), cv, 1 + 2 * span, S.aspect * (1 + 2 * span), ext / 2, 0);
     }
-    if (D.surge) {
-      const cv = document.createElement('canvas'); cv.width = 1024; cv.height = Math.round(1024 * S.aspect);
-      addLayer(makeBranches(cv, D.surge), cv, 1, S.aspect, ext / 2, 0);
-      this.surge = makeSurge(this.el, D.surge, S.aspect);
-    }
+    if (D.tear) this.tear = makeTear(this.el, D.tear, S.img, S.aspect);
     if (D.scratches) {
       const cv = document.createElement('canvas'); cv.width = 1024; cv.height = Math.round(1024 * S.aspect);
       addLayer(makeScratches(cv, D.scratches), cv, 1, S.aspect, ext / 2, 0);
@@ -1076,13 +1098,12 @@ AFRAME.registerComponent('rafi-v2', {
       this.treeMat.opacity = this.show;
       if (S.life > 0.001) { this.drawTrees(this.at); this.treeTex.needsUpdate = true; }
     }
-    if (this.surge) {
-      if (S.replay) { this.at = 0; S.replay = false; }
-      if (this.at > this.surge.dur) this.at = 0;                       // la séquence recommence
-      const free = this.at >= this.surge.free[0] && this.at < this.surge.free[1] && S.everAlive;
-      this.at += dt * (free ? 1 : S.life * (S.everAlive ? 1 : 0));    // le surgissement va jusqu'au bout, même si l'on bouge
-      this.surge.tick(this.at, this.show);
-      for (const L of this.layers) { L.draw(this.at); L.tex.needsUpdate = true; }
+    if (this.tear) {
+      if (S.replay) { this.tear.restart(0.5); this.at = 0; S.replay = false; }
+      const free = this.tear.isFree() && S.everAlive;                  // l'arrachement va jusqu'au bout, même si l'on bouge
+      const step = dt * (free ? 1 : S.life * (S.everAlive ? 1 : 0));
+      this.at += step;
+      this.tear.tick(step, this.show);
     } else this.at += dt * S.life * (S.everAlive ? 1 : 0);
     S.at = this.at;
     if (!S.v2Status) S.v2Status = 'active';
@@ -1104,10 +1125,9 @@ function updateLife(dt) {
   const rate = want > S.life ? 0.7 : 3.5; // revient lentement, se fige vite
   S.life += Math.sign(want - S.life) * Math.min(Math.abs(want - S.life), rate * dt);
   if (audio) {
-    const gust = S.gust || 0;
-    const target = S.soundOn ? 0.22 * Math.max(S.life, gust) * (1 + 3.2 * gust) : 0;
-    audio.gain.gain.setTargetAtTime(target, audio.ctx.currentTime, gust > 0.05 ? 0.08 : 0.25);
-    audio.bp.frequency.setTargetAtTime(420 + 260 * Math.sin(performance.now() / 2300) + 1300 * gust, audio.ctx.currentTime, gust > 0.05 ? 0.12 : 0.5);
+    const target = S.soundOn ? 0.22 * S.life * (S.hush ? 0 : 1) * (S.hushSoft ? 0.4 : 1) : 0;
+    audio.gain.gain.setTargetAtTime(target, audio.ctx.currentTime, S.hush ? 0.06 : 0.25);
+    audio.bp.frequency.setTargetAtTime(420 + 260 * Math.sin(performance.now() / 2300), audio.ctx.currentTime, 0.5);
   }
   renderHud();
 }
