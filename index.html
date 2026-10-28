@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
-<title>Le temps de Rafi — spectaculaire + œil arraché</title>
+<title>Le temps de Rafi — spectaculaire + traits du tronc</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IM+Fell+DW+Pica:ital@0;1&family=Karla:wght@400;500;700&display=swap">
 <script src="https://cdn.jsdelivr.net/npm/aframe@1.5.0/dist/aframe-v1.5.0.min.js"></script>
@@ -180,7 +180,7 @@ h2 { font-family: var(--display); font-weight: 400; font-size: 24px; margin: 0; 
       <input type="range" id="gain" min="0.5" max="7" step="0.1" value="3.4"></label>
     <label for="debug" class="row" style="align-items:center"><span>Montrer les zones animées (V2)</span>
       <input type="checkbox" id="debug"></label>
-    <button class="chip" id="replay" type="button" hidden style="justify-self:start">Rejouer l’arrachement</button>
+    <button class="chip" id="replay" type="button" hidden style="justify-self:start">Rejouer les traits</button>
     <div class="muted" id="v2Info"></div>
     <div class="muted" id="sensorInfo">Capteurs : en attente…</div>
   </div>
@@ -318,15 +318,14 @@ const V3 = {
     ],
     splats:{from:[[0.64,0.72],[0.78,0.52]],start:3.1,every:2.4,count:6,reach:0.48} }
 };
-/* ---------- V4 : l'œil arraché (sur « Sous l'arbre » seulement) ----------
-   Déroulé, en secondes de temps animé, à partir d'un calme de 5 à 8 s tiré au hasard à chaque cycle :
-   fissure 1,4 · décollement 1,1 · silence 0,65 · arrachement vers l'objectif 0,24 · nez à nez 0,38 · disparition 0,17
-   puis le trou noir reste 2 s et se referme en 1,5 s. De la fissure à la disparition, la séquence va jusqu'au bout même si l'on bouge. */
-const V4_0188 = { motion: 'Le papier se fissure autour de l’œil du cheval noir, s’arrache et te saute au visage',
-  tear: { poly: [[206,262],[226,254],[250,258],[264,272],[262,292],[246,304],[222,304],[206,290]], margin: 5,
-          calm: [5, 8], crack: 1.4, peel: 1.1, hush: 0.65, lunge: 0.24, hold: 0.38, exit: 0.17, stay: 2, close: 1.5, fill: 1.5 },
+/* ---------- V4 : les traits du tronc (sur « Sous l'arbre » seulement) ----------
+   Les traits gravés du tronc se détachent un à un, grandissent et filent vers toi, comme une pluie.
+   Calme de 4 à 7 s, puis 5 s de traits ; le vent tombe 0,7 s ; les plus longs traits partent ensemble droit sur l'objectif. */
+const V4_0188 = { motion: 'Les traits du tronc se détachent, grandissent et filent vers toi',
+  strokes: { calm: [4, 7], stream: 5, hush: 0.7, burstCount: 7, burstFlight: 0.45, burstHold: 0.25, exit: 0.2, rest: 3 },
   fx: [
     { t: 'wave',    c: [0.78, 0.17], r: [0.20, 0.14], shape: 'rect', amp: 3, T: 2, p: [30, 30, 1, 0.6] },
+    { t: 'wave',    c: [0.67, 0.52], r: [0.11, 0.09], shape: 'rect', amp: 3, T: 1.8, p: [40, 30, 1, 0.8] },
     { t: 'wave',    c: [0.27, 0.20], r: [0.20, 0.12], shape: 'rect', amp: 5, T: 3.4, p: [8, 3, 0.3, 1] },
     { t: 'breathe', c: [0.67, 0.80], r: [0.10, 0.16], shape: 'rect', amp: 0.012, T: 4, p: [0.67, 0.96, 0, 0] } ] };
 const V4 = Object.assign({}, V3, { '0188': V4_0188 });
@@ -334,7 +333,7 @@ const VERSION_NOTES = {
   v1: 'V1 · des effets ajoutés par-dessus la gravure : pluie d’encre, feuilles qui tombent, herbe au vent.',
   v2: 'V2 · la gravure respire de l’intérieur : chaque image a ses propres mouvements, découpés dans le tirage.',
   v3: 'V3 · spectaculaire : mouvements amples, ombres qui débordent, arbres qui surgissent et éclaboussures d’encre.',
-  v4: 'V4 · arrachement : sur « Sous l’arbre », le papier se fissure autour de l’œil du cheval noir, puis le morceau s’arrache et fonce vers toi. Les autres gravures jouent la V3.'
+  v4: 'V4 · traits du tronc : sur « Sous l’arbre », les traits gravés du tronc se détachent, grandissent et filent vers toi. Les autres gravures jouent la V3.'
 };
 const VSETS = { v2: V2, v3: V3, v4: V4 };
 function loadVersion() { try { return localStorage.getItem('rafi-version-spectaculaire') || 'v3'; } catch (e) { return 'v3'; } }
@@ -720,195 +719,125 @@ function makeScratches(canvas, spec) {
   };
 }
 
-/* ---------- V4 · l'œil arraché ---------- */
-/* bord déchiré : on suit le contour en l'écartant, avec des dents irrégulières à plusieurs échelles */
-function tearShape(poly, margin, rnd) {
-  const cx = poly.reduce((a, p) => a + p[0], 0) / poly.length, cy = poly.reduce((a, p) => a + p[1], 0) / poly.length;
-  const pts = []; let walk = 0;
-  for (let i = 0; i < poly.length; i++) {
-    const [x0, y0] = poly[i], [x1, y1] = poly[(i + 1) % poly.length];
-    const n = Math.max(2, Math.round(Math.hypot(x1 - x0, y1 - y0) / 2));
-    for (let k = 0; k < n; k++) {
-      const t = k / n, x = x0 + (x1 - x0) * t, y = y0 + (y1 - y0) * t;
-      let dx = x - cx, dy = y - cy; const d = Math.hypot(dx, dy) || 1; dx /= d; dy /= d;
-      walk = walk * 0.85 + (rnd() - 0.5) * 3.2;
-      const tooth = rnd() < 0.2 ? (rnd() - 0.3) * 4.5 : (rnd() - 0.5) * 1.4;
-      const off = margin + walk + tooth;
-      pts.push([x + dx * off, y + dy * off]);
-    }
-  }
-  let a = 1e9, b = 1e9, c = -1e9, e = -1e9;
-  for (const [x, y] of pts) { a = Math.min(a, x); b = Math.min(b, y); c = Math.max(c, x); e = Math.max(e, y); }
-  return { pts, cx, cy, bb: [a - 4, b - 4, c + 4, e + 4] };
-}
-function tearTrace(g, pts, ox, oy, k) { g.beginPath(); pts.forEach(([x, y], i) => i ? g.lineTo((x - ox) * k, (y - oy) * k) : g.moveTo((x - ox) * k, (y - oy) * k)); g.closePath(); }
-/* fibres blanches du papier arraché, le long du bord */
-function tearFibers(g, sh, ox, oy, k, outward, rnd) {
-  g.save(); g.lineCap = 'round';
-  for (const [x, y] of sh.pts) {
-    let dx = x - sh.cx, dy = y - sh.cy; const d = Math.hypot(dx, dy) || 1; dx /= d; dy /= d;
-    const n = 1 + Math.floor(rnd() * 3);
-    for (let j = 0; j < n; j++) {
-      const l = (0.5 + rnd() * 2) * (outward ? 1 : -1), a = (rnd() - 0.5) * 1.2;
-      const ex = x + (dx * Math.cos(a) - dy * Math.sin(a)) * l, ey = y + (dy * Math.cos(a) + dx * Math.sin(a)) * l;
-      g.strokeStyle = `rgba(250,248,243,${0.55 + rnd() * 0.45})`; g.lineWidth = (0.3 + rnd() * 0.5) * k;
-      g.beginPath(); g.moveTo((x - ox) * k, (y - oy) * k); g.lineTo((ex - ox) * k, (ey - oy) * k); g.stroke();
-    }
-  }
-  g.restore();
-}
-/* sons : craquements de papier, grand déchirement, ébrouement */
-let tearNoise = null;
-function tearOut() {
+const TRUNK_ATLAS = {"src": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAABAAAAAAuCAYAAAC29GvWAAAtl0lEQVR4Xu2dCfx1azXHH0PoEplCIiSEjCFDZQwlc5ISikqRqSKKylyiUhJSyhihhEwhhDJkjJSZiJC4Mvt8/3ev6/c+7977Wet5nn3O3ufs7+dzP/fe9z1nn3322cOz1vqt33qlK664Iu3s7Ozs7Ozs7Ozs7OzsTHHllVfuB+cEeOUT+A47Ozs7Ozs7Ozs7Ozs7OzsF5hIAv5JS+t+U0r+XNjIB7925ijdMKX3CzMF4Qkrpb1JKn5lSesxwzH85pfT5KaVvGn4HjuePDNv4evkz73HmdfrPIdDP+4aKD/w+2ec5PjSl9KoV28+x/b1vh21Nbdv7e/V+/xzPW+D7HhL73dbEfw7nLv8+Fm+34Af/j1yb77Pg5xySWzZ+WPQ8jCTg36Bx38b4AfkNb9iwffve/5RSulHDdg7FoZ+DS/DWzo1Gz8levH6vDR0Zjt+HNe7DXVJKj00pPTKl9Jzhmvt+xzZ7naev4fisHuj+th6zOd4/pfQOzh3+1uF4T/Hmzu3UsMQ9e2enG1MLkFdKKb3X8ClPD3xafsOqDXZOidunlF6SUrrxzJf6lJTSGw3B/t1TSq+WUrppSulh2cPnI1JKL04pfV7wAL1z9vqfTSndfGIb9xhumE8KfkaJT00p3br0ogy9OT945r3PSOki0PqkmdeU4Jw3vjal9LqlNxyRd3d+9rWH3/JLZ15PD9BbOhMt8L0ppReldMk59Z4ppXd17tMxedTwXaO8U0rps4Jv+uvh9Z7E1FOD2/bAvfcRnhdWclt5389XbmOK95ZkZ5QfTim9XvRNA9yDScDW8DoVb/qolNJXO96nyd+e6D3+cxo2/C/DezkG7+jYzgNTSi9wvG4Onqc/2riNCDzHCd5KkIy+XelFAzy3apN0X+z4jJsMr3la4bV/5diWXiOfVnj9z6WU/n54pnDcavhK57Xh4T7DuimKrV+5p9Tw3SmlB6V0kQD4uJQunrXPSin97vC7f0lhozyvDPalJtF6g5TSZ898Ds/yt5j5+wgUbIwfj7wxyMem5E7WfvqwbV3fKZ+YUnrf4Od7+QLvCysgduP50RMSK1NwLh7yfrtzAKYSABpgftXMfnx8ShcnBsHZT4y87j8O8B3WDg8BmMuIcpNiAUYigBuyQnCmvHH2/3dzHIAvy15DEoEH0RiPHv7wjo7tliDxYRCMcsO6VulNwt/Kf9sic44nzv7tPHmy6p4N21qaN3F+AMccWIRMQTPXNZzbAxa3b5XShWqABTEJQn7XN0vpYrFxTK438+GPT+niN/3jih0kKfeNwfd9h/P1JPU+slClqKW1oj3HU+QvSXLwHXrx4SldHJf3C26QY865+IHB9xkExPzW0QQrvKziM38jpfQeQ/K3BAnh3mjiyRO4T6HH65ccO8nzCMVBy4Lyd1JKt0op/bbj83JIgBteFQbqPH4rkvJzkAAgSVq6X6CI47XPL2xvjLdP6SIILyWC7Vn7wYXPuG4gaUGy99sL+/1a8nmsf2oScny/L6o4NmOglsjXTSV0PfDqKV29LvLAs4ZnI8mdD0npIhGDIuJNB6UivwvX21eklD53ZoN54B5NQsMLU0oPmfkMnuUUPHpAMK0spQLguESfDfn6zmAd89CU0v16HIAMnos/tcB2AQXenVK67JjXQpLrMwYV8tsMazkSTh89rPFYO0ULeDsrZ+rhp9WMX5/4DvcaMmfI2znRCSpzkD3tXMWTZw7E4wZ5GAEsD6u5pAuQzbR/vmVmuyyQSCh8TPYaFk9T/N7wF98z8xovlvwwCBBf7n1zSpcsXKYeYprZ7Sm37h3M6qKzhv+SN3kTAH86vIdFwByeypah5w4LYh4KVKOoCC+VSfcy12aDAsWItqO8yvDGSAXGVBelY8+D3Oid0Ye55E8rz5UNeBKRXv5yOKd+0fuGARZEUFt1BAJ5KoY1WKXVmwz5s5QuZPivXfgwu8e1JDhLzCXPSmgF2ZQvU+j9mudTKygBCGIiqMpD7wtz/Orwl3cufNA1h7+nSjnHn0d2OMPWEnPKLiDgBI/T89s698fuZwS3UzLsXN5ONT/K7w9vIBnYit2bvL815MocqvgeSGwR9PEbffOwHZJHHBMSN5+cUrq+bKgUeKpSE0m5nV8evCrGuedmC3OqzVY89yuP+u4nU7o4rqy579+6UxlfM6xhIyrqCH+SUpd1OrD2QEFLy/EfDokjkrk/NLR1TSkodjbMVALAk7VCVs5DjN51To5/HTkO594Dow/eXwicJ0jDkOMgFcuJXIhUWPLFEdlObkxTWHDkrYzM8YDsL70PJKCi/JqzW78KzexyLrbwbHkzn98TvaYix8GgMmncIrBjBJglOZ7X0pXfQ4+RgmKERS8y6mMxlxjRyr9JY71YYDdXrRnj4Y4q54/JG+/g3SEHdp8oBQktqGy8RzAHf5DSRS+5RxqvaIKM81DlsxFQYdGCVQPVEogoEFA5/ZHzwwgelsKSXDXcJvAm7tevkNcTFNVi3iWqRvGgqgFvD7AloP+t8AGmqlD12xg/KH841x44hgXepUSTqlKuM7qlq2Dt5k0UehQLBL6KN7mgWIuD3h9bidyj8hYLVACeRBPXMoWPr0vpojiDbxMFHs4f1hS5GkJl82Owbvxy+Qv2gWS7/tkU/xw4YKh5e6AJMgoEvbH1hUdVgsLKw7cNL0JxEknyl3jpUKmnSLJEi6RdZ/gcLMkx13Q7CzIV5JUeXkBGlAsHuRvZ8TGzwJZKzCmggdWUBGkK+mpZGJDxjVbCDCQ9JBFMjkxlzWtwh9S7diFs5LL9iEw2IvGikgZkK1vQShYSvZbFac6vyR8QZERhEWEQKGpCYA6u8bkeQP4emaIxtxhloUglYyq4Iotckr4ugbXNYFw6BUEhgSWMJSvnMKmy9r17YJHv+Sxb0C8lmYwGSF4wKlVapaScpwQLc2qpMbi35gEskkWkuFEI4Ehs3zv6xiEZyTHxJviQJfNdPyjwWT0XqBC5z04RSQCAJqBNcVaDtR2+S/DNmoDwSsP/bviMkvqKvn4oFT/smQWlQL4Wgk/7rnMJAE+iPYf72tRvlz/nSwqXMVSV1qOV6bcqDiI+BkpEvZhD0mnsWYCStgRJXFQU/Jb8VrQTUCCa69mG/x427Gml8JgSesjvub2TALbuKV2HPA9sLVNq5/yuQYlFAYl23J6mifZcyothPTA1jvkc1FKKTWruDzsbYCoB8G7DvuuDcgxODC4WpDYYZeXYQ/OcISAi+6v97BH4DWolWiRokLOSKcSQxKPs0Gx9j2BOqy2ePn5DKyQlPmB4Qak6U0Llq2Q9tarYih77qAR9jJIU1QsJJpXKkUSZewD+TEoXJl4ESLbAUAiSqTyU+lN7YoHnmGLGYAFopnj03t615w5MQBUprySNgdyV64Te0CWSpiU5cgsoigxvcnEMKmz0F0clvz89urWrQPLL4iZq4kWbi36vCBgYWitCCRK0XHtz3yGnpg94DguMWozAVI5rKog5aHtQ+I1qKmTPnP2UaTT4NrPjnuB9xDEpJXbsmeCRM4/hUfdYcGDtAL0oBQWqaml9FvSQUFOMGWtTnSNPnLesZzkntGUqCvJ0jjkBNYls5NmopeYwxYI3MetpFfGgprAR5asHS5iMrT2Um8n/IGufg8IPCka8SYiJSi24UbjOacNdYkKKea6UgvgpxowoWUehwMProyZxtrMRphIAZjw3J6Mkw01/En0j9P7iBZDT+0LaIkjmyMRbP3YNPLjo96mBTCkJHUYHejLB6krcI0hSg6hSxlrxVmbAsqwEWy0VslziXXvMp/hN+Yt8MoMHNdqMZtbn5ItI1Sx5QiBWcnnm9ZhhEbyMyeIJZEvGUz2xkVilSpMuAPEnaTlXPFhFfyw5mmMtJ7lvRi9qFwgl8qC/VG0Zg0CJ849FmFVQPXCPUMOxKVCm8P1LVSPDjN5KrTOtaEXRW4nXhW0P9LntTVzM4fn9qRznBsE8n6LQv2vUVokj6gELREv3blNDls43k91rT3gET5Kc6ibMKQCMkmrBQCFa8jDo4YBuKoCISe0UePCY1NsL6lbF2y4yBb933m5XOpcUku74HJEAoGJfann0JH616GGFlFZ0ncd6oidWlJlL9oP5XnlMSYFrlmsFtS2KptK1G8EUn7lirgfaDupRbuegLCF+Y0oF6yhaB1FOsJZG5c39MdJ2vLMhphIA9MtyQcwtxpBH/cVQtaIfB3l5jkluzxmyfq0PDiCrWmO0RWBBVY2bu+cGkf+OrfN8tUrDYt1baWI/TDVRkjhpz2HNQlLR6Qc9TQVBK0LeOc5KPi6uVIUBRjLBVGUVWSLHj2PMAoWeS1QBnsAKqKrzgMiThch8+b4R06JaLAgtVZpyaXnp9b3w9Cuq3DQSlMyRLwAP0ctX03tPwM05FJHYUtXn+URQ5u31ZLHrCYRMtdTSkuEJ6PGIMPJpL1NQLSZ4bm3PMkhyYvoEtYovdfP3Jv5yqXAkEBpjbArRHKq68ErwLSFeSpCidEOeWwrQaAvjt4yuDyyR7PWO4Fk69xlMAQCv7w+BTKkqT9FD8Ujdc9SXoPWeyL2lRmWifOHsGVWGNVw+RSJy3vO74yvAfW/KnFthkkoJ9RLw3LO8qKFeTSvWFBbQm//HFHaNRlSnQJKI+2GNceUUVnjAXL1FJTeGKiFI5taMo8XXiWRiPoFs58QZu+FTWcRsiL8r9edRtUE+w2vHAsWWBdQpQB85i4CSM7IHFnylrOcYZL558HgXjLn7v0fCXEITQd7AkhsbFT4CA+1/H0MD69Kiq4TeQFsXHTn/KH9QI/XOE2qe/nJTfcwtADEiovrH9YrkC7fx6IMTuSS/lR5/FtlLG9SoEkIdk8fg+Os1FFVRgCeAzCklsECleL36BWnnUJVDiwppjlwun08dmQPzKRbBVHZKCg4DmTnnMwEZo7RI5DAmb0piqcobr9zeFpq0i9SQVw+n4Jrhd4konqiIjnnu1GLBGsdfjR29oAKMkvu1eH0TcjRplI+7nQOTNiNPrE5hC/m5NgeeGVQPSfCWRivyG3Jv8LiVK3Z/8I5Zxgh2Lhjke+HYXmr5NPhuHoM5/Y29MnRFDQAj6sExuMd4R7NOcY/Jv/FDlZnfneICSfKlFF9AO1JJxajFk1olyhgaQEemL5Sw9sSSGaWNwHxBaYMjcK1QOKsZBzuFJSRqroMSmtjq3XKxc8KMJQCoftCLySKjVGHk4WWzTS2LrPQ0UdsSVPyQnNJLSkBlVdgWCMjsphaBGwIPPm+FJL+BRCS5U9A3bnirDBF04eJdxEyhlXkNHHqD5CqKN3hRbHzV3CKT85Q+dAIB+uVy86MIeU8thoX5fOCeqIEh82tLqMlhxFXdrp9SkkGxCq/H3V9NmDzSTS9U6ywJw+LJK/ONkEvlI4lfq0BFZL5U/2lrUqMwznN6YsfanFggce3Q+02l3XMMzJ1bz68IkZ5rkhjR+4FHau9F5dxjz/ESBINRE7GxhWrNfUKne0TkxvnzMJK0mguUNOGGlLjUmvCkwTTSO2YOVHHhgd+GBNkcFAi8LSA8HzzqOHW4594TSXIZZnQWNWDNsbWsV4Fo5AUFT1V9DqrLqAAoyhD89/QZyiHhnSsxDokaqXpVNiWsna7k62IFjBrlCZCo4b219/+cJ8gfeHxSIqgaIjpRZOeMGQvGyE6aSU6pb5STjSCf6v9YNvpcT0YNLFoDUgPJXen3mCJqXqNmemroUosmLqILXQ+aYPH0W8+RS+s81dsIY6YrXqK/o1Jytv38TrI3gok8CENV0tu8zGDEjuHt91NjG+/INgtqI32SudyzhHqm1FQuplAvj1qZ9xyojBR67j0g8cVzpGcrxlQLgknTqXR6Ely2cLYAxItn2zlUdEmczQUXzBJXSsZWETSBU5Nkhqj0lF7ovCeWCn5UdaXV+5JiMUcX4qWedi/Pkhfiu+IxpkXZ1cvUdQwCsVL/MRVPb6WWIpFHgZKrPGqMNU2W3urXYgkEkm0R8tdHkptTPCali4k1l50bV155ZdU/E1CF9xRw7NxoXTvlmP8EkOjqgSVWx1qODVrdUJqqyicKATvrBNZF0XvSFOaL0Wt7io0phaLZd+15Zu/bOQ2mqrE3GL6eZtfH+IdhhjESRo8c+VxQ6Z+n794DC1I1PVoSRgAaPQIGKswGi5HRftfITSlDe4BbnVbz6opn3m6EVmNMbSPwwiLZJnscAnr+VPUBnEdkqnsvMnT0n7dvT6V99FR6oWc30hphixRvYEJyyCZE3HAw5+kFQTkVckzk+B61gd4UKtdlAeYZo4eLOVUwbw+/B02SIq/Xf6j+eYMQa5fQKSYevLJsg4q7VZTnEgBIdfWaipy3JUhy2LOlNhDFSCpKnqwhGWRrDy8q+y85g+dwX+S+RDLCK8Mv+RrRYmRBF/c7jySXSrn380EX+15K5wvrN28ijuc3KtESXAsajKi/jhednlTjm2OQsOAYeNRYyqOzHVXTtVp4Ljxy8IlYEjy6PMoqe+bYONpeqHrC297VA/vcfNpIFI4LCR+UoD38EfCn4j5b0zJVQv0pvD4sO2fOWAKAxQhBqwZtUyDpYnFLBYGsJv2D+9iIq/r6jHw+9aJEguiZbJ7KxnpMAlCzK0bNRIIoDz2SFEY+CodznCzwWsCl1vC2U1Dd0ukOS8P9A8nfTVK6SBIa9GFyf6A3cQoeXsi5vcZBZNWpuvLQ9ybbqFib9JKAw+sOjeRcv4+XSG8l55qNd9LfupWnDT3JVFBY6LeaZebkI7MItOfuHSzmkT1HF+QlzGW7h3Mx/jb8E0GDdI98VD1RSp+lMmhGCPbEev8jMnpFAw1UFh5I/pgBodGy0I5cZwYyX9qfvK0PmuiaAsNVDEe9PhAcg4gHAqN9o6gEeYxIuxuJKq+kO2+zahk1F2mTGKPGRDmn5OvgpUXN5wV1rud3LalDelFjENuCjrSuAfWrJfE9iTwPeMqQ3G/1tChhU4V2diYZCyCQ/5P19PQY0leGKzFSLyoUZDWRt6g7ba1sfavklZDelbZDoUZkXknvFNxENTjr1RZhtBr/KWOZ6qiUe0k0WPX2zGKYc0nPXCRRVAmBGO0UXA/5vGJmzBo8WLlH2D9UjKgu2Qx3z9gzerqj/aXay+9dWFIV9iZdFK/xpWEVGcgD6xa0Qtq7tWVMLYYKYKrFgqozc4aXoEfwDwTzOjPeg06a8ASVtHpYC1MpOEL9E61ye9HrLNIPb2ii+37eDx2phrW0iNm4rSgkADxSfSBh5TEbxHdDe+DnoCJIUODx/vBU3mswr5heBqSGVvChpQUuOi1higcGD5A+r2Bqos7awBUeFUAJVRWWWgWj6PXsiSnm8D57TfVV046Vo9V07zqhBL9J3jbXA01Otq7Zd86A/IJiUUxlgQW1N+M1dlPOTz5d4EdMtLaILp6oFo6a5UQCsMhrO6K9bz3cb9U9PTLu69BY1Q73XH1g4YzfA61w1cyapZJreJUPps45BgT/tGVoUlBllKWKHz21cxMT1Kg0YtBE1ePuckA8XgBIyKOjpGqqHkhVbVHWu0KuyRjvZBAv+b2OoKamKrsW8uDFg45H85hSgvXzewJvveZbk0NUkl82JN9UIu6ZL69wfWsCICJnp/1DFWctlava9i/WK5GJIB7n9ohh662Gg+kJjvNRpr2wwM9b4Y54lOB2b5RGKI5h57x33+ZA0h09T/JJSJeZuEXWaHOv7QiTkT7XuT1t3/1O53u85PeSljaD6LnjUeuUQJ1jnkZepWAJ85GIjID0oK1B3rXhzhmTJwAI0qgqentIyJqPLSKpOE6N6WDsU6uhy5pR2RHVo95y90NiFbqSk7GH3lX/HB1n04J9V7wAWJhbbyxSxh4z7VXWXdMTCVat8cyXNzxjm5aEYEh78ujDxziMwAOTwLwPnGNPBZWF9FzFRQMPk397wR3bpJieByaJsKgbNS0PUSM5MPkw5nCtUkZFF0VR5/YSeW8j1Wr8AFqCugt6LbDz7RRoPe6jXicjmM+AZ3KAtiPVjOxTaNPo0ZvrTXRMofPeoUUe660SGqgGuA95lEZGzfU8h5mXenxaZhNq3utkBFMu4g9S4qXDfdmLKkJqkt7m29HDP4bpD+obU0Ot0uSQmJok6pvQosCZQn2UWlpKo8n3XjC6zxRuNe03OSiOaM3osa5WcsPuHtfLzgmTPyypBpC9Z+HtCS7on8XpfyyTRfV0rAeOqoUaVpwaelGTANC541tDXdVJ3LSg7shLoC7ZKE6irtSGBcpMtgB1mY8GmCXI0teglW71V1g7BM9WaadPGBk6/yZwpC9d+5pp62A+NXL4uXOH34v7Fv9+ZvAAIBW0BOZSI0uRArMIm/M9GENbZvIWihbuL2/29vF6yU2XSM5wLV6t+PEGKMFAfSlIANQkq005UOrpN6wP3tMqwvE0lUHUMM9LdGIHHiN5gtfjf2DQKqSJKXX2j+L1HzCsquwxSxvFe07PMDa6cgpPorKG/xne5Bnvh2orKuduqcaqjB1VUSu0rEaOOaAINPDJOFYw6oVnItCi60Hv3ere3wPMXo3asXxgyf7LJlB4r0FeV4nda2sMOMfAH6lHQWmOQ3k77GwUTQAQxCPnRwrGwthjdkWy4NoTAT09LjgKj2WUey881wISYVVERAOStaE9ulQLo9I5RXu0W8azeKkdX2iSNbs553N6e3hamCrEU/EZg94228Zl5n6eh+ER4b5ARt3G9Kgjv0rsWMhTlWLhWJLeUSWvSfigYPIEXbXouB8NvD3kY5NaE3CGt9e5ljy5i5Km5Jy+VtjvGgNQm/RhSh0PmFlyTdN+V0KDl2Z1hUB7EQrA6LQZqln5uLSoyaROymhRJUTfa602l6kOPPfRhoBCQRXmWW+BBlCetiUvVqzxVGhrEpLqQdNiYNnq7A54uUT9BPKpNr175Xtj93lvAkCVbUu41D+3wxe0pEargqMW1i2gyaBaSLhRGIj4pXjQAiSeMjWKm50zQRMASFUfNywAPL1oYDeNqcUpN6FPSCk9e+R46hxPWg6oghBcIcmlfaBHoHVodJ4yeCYpbImWntO/li/q7U2LYmZaUNtf9ZThQzVVTLZWafWxsIo2Jj21mKcCrrJbQwMYm41rmOyavkRVoMyRO4l74TeukfN6zLpAgzlmgkd4UUqXOHeTQCDZ2huSJz3JKyRbVkBxvGsksdz3+f0ixpQEzPSGeoyrCJYtoGptAzBI1HBd8tylQho1UmQEpxomRvu1c7WEJxEyBoqbCOo/cEzM3DHiy9FTDWDP55Yk/xw2VhNo+4q2jVgA2UvWTHIvUunOn0XVpeQDYYkwbzvv0ug65U6VH2bPEo+x4RLYuoVCn/Xxt4AvUutY6Bwduwk9JwntnBhj/XJkt7w3Rsvyz8nn2B6VvHxhSL+jZXOR19gDgQf/IUeW9STf7ykfhK3i6VGdQiuaS41G/IDsw1ucUHVMDxJVNf7JTYGifIe8oVbSSHKNfkbYotKEPtIxMJci+FiyMq9EqrTGfSf2PUcrBTX3NHWrJqGV90rXoouxJdyITwVvD38O8mCeaVFHdW/CC+zazxNoNaDSQ/bP84pKNEZd0UAaSCLUkge+qAdriCbd9fW1iqwe2FrsPxwbM1XaUm1Ll+BRQjjIA5OoykTNYrUtrxbO1Yibf+5R03Py0BLYuiKS0Bkr1PVCJw3o+ieCmRXWJO17YZOX8mJfDeaN0EMdodCWbUQLDztnRNQwpwWkobn0i+oKFVcWPrjwUs1Ye2bVC8ZONS7Sa0ZlmlE8zsk9eJ5spMYx2Raeuh2gL9WCpdaqu+5X1FROMUVGnvjYAnY+qAOxC8+CNCDNNamk9txPYRJEb9WcKnDELTsnH0EX9RGYgsW3VVxpdWk5B8dASXYKRKqxigWSqHQwQVwCVchFpl/ksPgkmWAVWrvv1ciAPf3jU+j0BPAm2aCXmeVSiekS+C3hOeP1jMAbZUmWWheqt4Mn0aHo63skalhzesY5GmbUaWhAu0as+DGVaB9DW+28z7gImsTRUbdeLH7odb3XwGhPey6Pjb6tAYVpTQvjFCgl1JOl5l6+cwb0uNHbothjosMNRg1BADktWXgWS0gPuSnTh33Mi7wHWzJnm0PnTrcEM6DVlpY+wDm0ClWzgH/0sPExgxbtucTJtQctkkYkZEw/WNpgcQlMtaBj/I6BLUo8FakaOTgtDYwbrK0m03fIPRYjvR79r4a1ukDUEKsE35fEymNLL1w5ZlwWbb3QEXCXmAh6k1eOBBZGWJY8a5GxM1deR39ZxZD7X8TID3SsZhTUB5pYNRNWD60yV1vDHGs8rU0g8CrsVJ3WE0tA1KiVPOjaz5vsUKx1sFdSraWFIuo1cUh0bG4ksHy87OQSagBVONW0gZpio9faqxa7R/JMJ2bpQW+fHJ3+UONjs3MGvHJkQTKxKDHX9Ls5jxeylzHpFYEb5jK0ANDvinfAVuAma9IgQ2+mW+YJsvOtmUQNCGoeAB4wpGrBzH1YGI9hATsPgR79t63VDKYf1E4TOCbRoGopbC6xzWKfQ42gIslTznvtgY1AcM6xokrQs/Kn96fWczAHiTIGRC0B4RowL5yo2ZreMyPnSQSOrZ6PLeosNXXDC8iSYVElhxkI08IT9RAAPtdaGyJEvBbGsDn1LTPKW1BDOs998TIX9E5YwiuSfImgVXRMF6Py5EcMHxadQNCDPCkS9TA4JJqcqJliAkvdt1RZsNXAlOS2mZ56pqXNob5V6pPViibYmLC0s3MZPS5yq3Z4HlzGM4bxJLnMmkUjFbmt9c7zMDiVgD+HUW0GFSGSM7XzsVW2GpZ+O9HKZguW2MpRFQMqD8yvag2rIDqnd4x8UsEW0Mp/6wK+B9GROT1MgCLgt/LE4f7Yg/zeWxOwnTp2jGp6jq3neSmPBRbSOk2HfvAe01W479nECiYMHNrtXHurb+M8wTRwr1EUPXL4nBrFWA806XEPxwaZvrQEdr5H+sZbQE5dSy8VgJc8yR6dInBIaicg5fSID3KeI38QafNZG/i7fKqMZK1F2zdx7Mcgsxd4V+3sTNLjAn/YsPVofyoZKsyScjMNDAO3BscxXyihYFjqQX1MCBRqXde1qu7pue5BbXVzbuGumVrcrj3O3VOca+ClEsMt+n6oKeTSEBRYEGrjunqgfZjeyS/nBtf2TSu+tCW1apOlXky+Dj0MAUGTnPlYxws6KAen+B5ZVHtVYqpgqKkOc/9BYcNnHwNtrfMkMKaS062Yu3p0LRcBhYlho2wjmHfMbHtR9PwstNyQpL9+tpO9+r+XIPeOqcVM6npjagqSON5EykEML4NgZmhjo1vQpAitsb2USNrCtdRvubNheiQArB/H27+Wc++ULnNUvcXGjunYWBLaHKgsUE3ZugRHF5kt6gytsCxpuKQzqG9VeS7p3OIcHWOjVbgIuavwZdQsYhy9w2uBVg1m4YL9+1hEJLXWq3eZ4Vnk9wqiPb+199kxVIL54NI+Rb7f1Gs3CEnLmlnK5sS8RC+tQl/1L8gf9FABqIGUTqI4BFTDHzWM5/S2XmhSrCYBAMeuln3ecHDzQHOMXgFejiW9l/RC0FaoaIsJ3GHY6ZYJP1GY5qKSf85PDdrWBkraWvQ6aJ12NAUFJJOoe5OWUYXeocDot5XccDH3SatFjSqX+i13NkyPBACybm6GtQ9QEgjIYNTlVftitsBY7w5VCVQBeCP0Mgo5Flrxj5jK5Oh2WszvSlhPJ3i9KeB6pQ0P0Hurv3mNidqvOD/rlLH7T02A1ZOIIzVeH1SFTTZ8CHJD1DEPlVrMJfpclSglWPy/bulFR4DfiyQD56EGwN4FdYmehpNRuL5sPKenx1Z9X7wVxbVhpsEetYkl5PM2nlaoyP/l0Na2FBowRe67xwQj5GvJDtj0nbWizv9R4+Z8lGfubdULU8zeK6V0S8dGzdegV3vD2lCTYNTDZkbdiq1/WWut8Tm2c0R6JAAAeUnLWBSC5TwL9pAjHpcanpa9ieNBIgO/g5aq+RrQviRvVWYMPQ7XTWnSaK8VrZh6g3pgn8AjSdeM6qhMtkBPQ7ets5TrdAmT8UdcxKlQ4vdR2wZTizqkm1lXD3Qx27O94NyxpO+SRleMewImgSif1eHg6/3t0EE1xQQSGyjrPqXDd6lSrxwBzMVukFJ69cJnm3RelR+9wPdhyfHFOrHiYyp32kwqmZByKLaWIDUjzmgL0pOyA9q7NYzfn3ujGk16JvAYrSbPVfcCr/qtAZQxGDobtP1FildTsHanWMW99IaTr9o5S3olAJjh2zqahmy2uiffJ6Wrx+NsASRpahTDgxxDIxbVrXPjj41K9VomAWgrAfTKco6hPfze8W0mrfQ4UdP/ZWCAGR0LpAsh+k/PmVqfhlbMvFEfvCXeI6WLe5N5nxyKfJH0aZ0+2Mzq4HadJlucItFzlPG2LMJr5l1HoYVGEw3e3vk5GDFq/Hl0hzqAqpAF8Bs6txUJItaKJchL38Wq6Jaw3hKq7qytLtt66pBtAGr0W6P42wovzHYUj6OeYOyJKsESFJ7EyrvIDizlf7EGSORq8Yn/72E2TNvgO6+8bWXnCPRKAECPbCyLWn0oRBbma0B755C3sXg5dPVkzVwj2zlMYJYyStREBW6tHqz/0lud116tSBUZ1AwJWduxHKjXwLGMP0lsUYWK9NTaubRkZXcK7e/+9k4/XG5g2bvicyp4HemPhSYaSD6fAhgEe3tXtWUhMpFoTZiio9QGYGrL11rTzh8YPBPseB0ClU8fejJGEW+F2ukRlJ9/vQ34oopJVdfmRaRTIzcB9Ywn9tCi0N45UXomAHrBaBjrh7l9Shc9QluAxMWThx1l3i3GYvS5n8p4QJvBC96AOic3pyEIXmqEnY6T8lbvTP6mJlhzqLMq/bilhdsUHBf6vs6VSJtGT/AvmTN7HKOnCV8UlAdKdI72FDpDnqTlmmdcHxqTY6uj8lrR1pDWdg49z5eaC9+Tb5WN1d6Hj41J+vPJSDlmbFt9TnYOGKPYbHpNgkehReSQ5rF6PXgUglsG/w0d2dzLlK4W2lKMU1YAGLquJBby+KDs7IRZqvraCv0wSCgZsUHgSY+wZz7usaA6dPeU0lsMO/BrKV0EkWuYb94LvpNBUoNEDT2LEXIDwe+MvLkCkguc416ppAU+kawrckyruEXbAJRzVgDkypA1w3Vg0lMULEv2y45BkHCz4S+ojn56h4OFD8AzZTvIXaPmUaeKTYgYVak4K2qH4ttSujo4pJ2jVmIN15SdRilzyLGXrXzw4L2zNfj9aAcrjeyyhOkaCzgecHT3SL/nIPi/jufDOkBSVPfXHOxPGc5BC/x1fPMl9L7/XXFFcYDBOZgnc9yZhHbz4WCT6P8H/rv38d45b9b8AMEoxEat0AqgAeiaoEJERt5GFzIejP5zxrz1MGNaC7mEiF6lqKmIZpWBJMKSaKa+NL1AkzWR0S6MeTSiwaD2e7UuiLYMc5a3gs6f7tWHH0FNOO8SeeMM3K/Ukfv9O2331PDK0Y8Fz8xeLtkk4S350WzSGak4z73WydZaBxUKCaUA86Hyhlo13imA2/3SI5ZJhuY9/0wFOHXUj+slK/myFJwO2fZxTIgnGJWNenWtsc/OxllzAgB0MgA3+rsudLxLC2mqKSyIxiq8LJJUokM1k2CTrPEx+oSXYmwO6ycHP6yne7mHJ8qLqNbOYW7TUUm4utJGg3gqPsY593MuQkvQMYOanWIIeGjylpleC2A9F2996C+1EfIWjDXyGaLMalEAIHm29odm5+0DUywjbhxN8tx349+lBaTqXaZETIAKhmRongBb+7q5B4w/Nd61xwYrsXYROPXrOgeVy9buvTsbYgs3MoIqc8Wl+ta7PxUX7FLwdYeULoxfxvqP2L981ApzzZGel7a7JZAgPTfb4agZjo0jORTmyQC5+iDH5mdHHX7VRA3PighadT3HSQBbmQM9hboTHxKt+ukCqQWt+PTa5qkRTfAdA9z7bbLDgxp2QL+rOqBvhS3ucw2rkES3JFvtvRU8K6VLxpj2hooz5pJ50tXGMJ46llyhPfExR/qytt7/+iN9/s7OybKFBAAw9sXc9Jm/nTtlRtB+cKSCzx58BuYgE8c8zTFwm2fEhsL+MXfzwZEd2wD596np3R5TEhyC0sxhnOBRc0TnuyNDNKLVGOZdG3c8xEFYGRg5bRFbEB5rwoeOoLTEVSsk9zRJticB/p8HDP9ZaiNaC7ShAYvnaJuWkStdbrSWL+dEjcNWQW2QPIKapt55FV/uOFjyQ0cLLsE/ZRs9F0d1VVDSmtJjJF0U8175iugbj0HtNe59385OT7aSAAAC6jsNX54MbDR4oE+fcSK4I39NSunLBmMN/j3HVw2mX2OGiZj+jbUPMIbIFmGnxNOzL0MlMioX1qBp6QSJVrEYU6mjfHJI5EQVDa3kTt295NxbYQuS6jFQssAaTFRtdGUPbisb6dVLfgp848a+hE0zgc+p3Pd/TenqSieJj97zwJfmlKWz5lej49HOGfNfWgpVk5zium4O9WkqTadYAjO5zZMwOzs7jWwpAQC6sMG52msIwoi1hw09jRiakEHn4ekxobvfcIzVj8CgJ2lM5v8OKV04EW9t4ehBDWFIdOCIfi3PGwfUKG9pKV0u+7/nzH4inT02tI6cK8caBViDVuCPhY49yxVItTxF3khy4yNrN3RibG329FPl+LcE7sxaN35pA78pZpbG1tY2Eex5yxrj3GFdtzQ23Ql0DXoO5D4ix1ABQKmFc2dnJ8gWH5La/0qgXaoiYor0XSldyK2pApM4QG4drRCMtR38fkqXLJoNzMGQ5n588PfYAt+d7SQj8F4e2HFdtDwk8L4e2Li+3ujCM4r2F55zAoAk3Vaw8UgvPOIOY4iKwoX7Wcs87Rz1+bjbEb/f2rBq69aSIi2JNXWjN9XLmtE+5VN2x7eZ9OdmijbGvVNKfzC0iS6FrpNPabJTDUurNpU1KOx2dk6WLSYAqL7pg54gkj7se2W/Eg9HFrP07nMjwawNE78XB39N6wmfmtP+/IntIZs8xYDO+mGNOVl9Dn2ZLf4NNeDxYCzVF2qmWxA5HkBvnbG0lHHNbO1aeXhK6UdXcEAf1XkfVDJO29TOVXz08G8dw7gFGCVVy21q33gkfls+91j+HIdAFSnXOcQHrhymES05otOeTVShMQY8N9Rn4pCTbxilvbOzsxBbTADAPVK66FE0GMP3iOwYMWNdndWpktXM03zOsN2phdSUxHILjtE15LL9iDwWH4dDo1WsFjnsHHpeRQ2CHicbZtrEufGi4Quvws06wA9m96BT4VgmnWuHxT/HJprgOxbv1+GDt5YAUANX65M/RX4kpfSK4YutZUb7MeH5e/MFd8DMP8+1D/3xCx7bOW48/OVc6+bOzk4l4SD1iit21VkPcP1cC2v5TSPHZC37vCSR47EkazvWhzguNd85sl812z82ke+3FVp/hyWPSeu+LcmS33uO2mNyrP3tQeQ7n8v3LFFzHCLHOafm845Fy/dc+nvX7tuWjv/OzlrYe2x2dnZ2DsxSC5baBdTOzs7Ozs7Ozs558H8f+be1pREGcgAAAABJRU5ErkJggg==", "w": 1024, "h": 46, "pieces": [{"src": [653, 134, 12, 25], "at": [0, 0]}, {"src": [582, 140, 57, 46], "at": [12, 0]}, {"src": [657, 140, 25, 46], "at": [69, 0]}, {"src": [651, 212, 22, 17], "at": [94, 0]}, {"src": [631, 161, 13, 15], "at": [116, 0]}, {"src": [586, 176, 19, 46], "at": [129, 0]}, {"src": [594, 212, 15, 46], "at": [148, 0]}, {"src": [598, 248, 11, 14], "at": [163, 0]}, {"src": [603, 187, 17, 46], "at": [174, 0]}, {"src": [609, 223, 24, 46], "at": [191, 0]}, {"src": [624, 259, 16, 46], "at": [215, 0]}, {"src": [630, 295, 14, 28], "at": [231, 0]}, {"src": [635, 217, 9, 20], "at": [245, 0]}, {"src": [662, 223, 11, 16], "at": [254, 0]}, {"src": [694, 224, 36, 46], "at": [265, 0]}, {"src": [713, 260, 10, 23], "at": [301, 0]}, {"src": [679, 230, 15, 36], "at": [311, 0]}, {"src": [636, 237, 13, 46], "at": [326, 0]}, {"src": [640, 273, 11, 28], "at": [339, 0]}, {"src": [650, 253, 22, 45], "at": [350, 0]}, {"src": [594, 254, 23, 46], "at": [372, 0]}, {"src": [606, 290, 17, 28], "at": [395, 0]}, {"src": [720, 279, 14, 19], "at": [412, 0]}, {"src": [719, 288, 22, 18], "at": [426, 0]}, {"src": [623, 292, 16, 46], "at": [448, 0]}, {"src": [630, 328, 12, 34], "at": [464, 0]}, {"src": [666, 294, 11, 24], "at": [476, 0]}, {"src": [601, 309, 21, 46], "at": [487, 0]}, {"src": [612, 345, 18, 46], "at": [508, 0]}, {"src": [620, 381, 12, 27], "at": [526, 0]}, {"src": [616, 333, 18, 35], "at": [538, 0]}, {"src": [643, 334, 14, 46], "at": [556, 0]}, {"src": [647, 370, 13, 30], "at": [570, 0]}, {"src": [690, 345, 10, 20], "at": [583, 0]}, {"src": [707, 348, 10, 19], "at": [593, 0]}, {"src": [634, 358, 14, 38], "at": [603, 0]}, {"src": [691, 360, 11, 46], "at": [617, 0]}, {"src": [692, 396, 10, 18], "at": [628, 0]}, {"src": [676, 362, 11, 33], "at": [638, 0]}, {"src": [708, 365, 9, 22], "at": [649, 0]}, {"src": [626, 366, 17, 37], "at": [658, 0]}, {"src": [665, 391, 19, 46], "at": [675, 0]}, {"src": [679, 391, 13, 27], "at": [694, 0]}, {"src": [627, 417, 15, 46], "at": [707, 0]}, {"src": [614, 424, 18, 17], "at": [722, 0]}, {"src": [730, 462, 14, 13], "at": [740, 0]}, {"src": [639, 430, 11, 32], "at": [754, 0]}, {"src": [662, 436, 19, 46], "at": [765, 0]}, {"src": [670, 472, 20, 34], "at": [784, 0]}, {"src": [646, 438, 14, 46], "at": [804, 0]}, {"src": [644, 474, 11, 19], "at": [818, 0]}, {"src": [718, 466, 23, 30], "at": [829, 0]}, {"src": [715, 468, 24, 38], "at": [852, 0]}, {"src": [704, 481, 18, 34], "at": [876, 0]}, {"src": [657, 508, 16, 13], "at": [894, 0]}]};
+/* ---------- V4 · les traits du tronc ---------- */
+/* sons : souffles de passage, puis la grande bourrasque */
+let strokeNoise = null;
+function strokeOut() {
   if (!audio || !S.soundOn) return null;
   const ctx = audio.ctx;
-  if (!tearNoise) {
+  if (!strokeNoise) {
     const len = ctx.sampleRate * 2, buf = ctx.createBuffer(1, len, ctx.sampleRate), d = buf.getChannelData(0);
     for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
     const comp = ctx.createDynamicsCompressor(); comp.threshold.value = -6; comp.ratio.value = 4; comp.connect(ctx.destination);
-    tearNoise = { buf, comp };
+    strokeNoise = { buf, comp };
   }
   if (ctx.state === 'suspended') ctx.resume();
-  return { ctx, ...tearNoise };
+  return { ctx, ...strokeNoise };
 }
-function tearBurst(o, t0, dur, peak, f, q) {
+function strokeSwish(dur, peak, f0, f1, delay) {
+  const o = strokeOut(); if (!o) return; const t = o.ctx.currentTime + (delay || 0);
   const s = o.ctx.createBufferSource(); s.buffer = o.buf;
-  const bp = o.ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = f; bp.Q.value = q;
-  const g = o.ctx.createGain(); g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(peak, t0 + 0.004); g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
-  s.connect(bp).connect(g).connect(o.comp); s.start(t0, Math.random()); s.stop(t0 + dur + 0.02);
+  const bp = o.ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.Q.value = 1.1;
+  bp.frequency.setValueAtTime(f0, t); bp.frequency.exponentialRampToValueAtTime(f1, t + dur);
+  const g = o.ctx.createGain(); g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(peak, t + dur * 0.75); g.gain.exponentialRampToValueAtTime(0.0001, t + dur);   // il arrive, puis passe
+  s.connect(bp).connect(g).connect(o.comp); s.start(t, Math.random()); s.stop(t + dur + 0.05);
 }
-function tearCrackle(dur, intensity) {
-  const o = tearOut(); if (!o) return; const t = o.ctx.currentTime;
-  for (let x = 0; x < dur;) { const k = x / dur; tearBurst(o, t + x, 0.012 + Math.random() * 0.03, (0.15 + 0.5 * k) * intensity, 2500 + Math.random() * 3000, 1.2); x += 0.07 * (1 - 0.8 * k) * (0.4 + Math.random()); }
-}
-function tearRip() {
-  const o = tearOut(); if (!o) return; const ctx = o.ctx, t = ctx.currentTime;
-  tearBurst(o, t, 0.22, 1.4, 1800, 0.5); tearBurst(o, t + 0.02, 0.3, 0.9, 4200, 0.8);
-  for (let i = 0; i < 14; i++) tearBurst(o, t + i * 0.012, 0.02, 0.9, 3000 + Math.random() * 4000, 1.5);
-  const puff = (t0, dur, peak, f0, f1) => {
-    const s = ctx.createBufferSource(); s.buffer = o.buf;
-    const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.Q.value = 0.9;
-    bp.frequency.setValueAtTime(f0, t0); bp.frequency.exponentialRampToValueAtTime(f1, t0 + dur);
-    const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(peak, t0 + 0.012); g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
-    const lfo = ctx.createOscillator(); lfo.frequency.value = 28; const lg = ctx.createGain(); lg.gain.value = peak * 0.6;
-    lfo.connect(lg).connect(g.gain); lfo.start(t0); lfo.stop(t0 + dur);
-    s.connect(bp).connect(g).connect(o.comp); s.start(t0, Math.random()); s.stop(t0 + dur + 0.05);
-  };
-  puff(t + 0.05, 0.5, 1.5, 2200, 520); puff(t + 0.1, 0.4, 0.8, 900, 260);   // l'ébrouement de Rafi
-  const osc = ctx.createOscillator(); osc.frequency.setValueAtTime(90, t); osc.frequency.exponentialRampToValueAtTime(36, t + 0.25);
-  const og = ctx.createGain(); og.gain.setValueAtTime(0.0001, t); og.gain.exponentialRampToValueAtTime(1.1, t + 0.01); og.gain.exponentialRampToValueAtTime(0.0001, t + 0.3);
-  osc.connect(og).connect(o.comp); osc.start(t); osc.stop(t + 0.32);
+function strokeImpact() {
+  const o = strokeOut(); if (!o) return; const ctx = o.ctx, t = ctx.currentTime;
+  strokeSwish(0.45, 1.6, 400, 3800, 0); strokeSwish(0.4, 1.0, 900, 6000, 0.03);
+  const osc = ctx.createOscillator(); osc.frequency.setValueAtTime(85, t + 0.4); osc.frequency.exponentialRampToValueAtTime(34, t + 0.7);
+  const og = ctx.createGain(); og.gain.setValueAtTime(0.0001, t + 0.4); og.gain.exponentialRampToValueAtTime(1.2, t + 0.41); og.gain.exponentialRampToValueAtTime(0.0001, t + 0.75);
+  osc.connect(og).connect(o.comp); osc.start(t + 0.4); osc.stop(t + 0.8);
 }
 
-function makeTear(el, spec, img, aspect) {
-  const root = el.object3D;
-  let seed = 17; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
-  const sh = tearShape(spec.poly, spec.margin, rnd);
-  const [bx0, by0, bx1, by1] = sh.bb, bw = bx1 - bx0, bh = by1 - by0;
-  const kImg = (img.naturalWidth || img.width) / 800;
+function makeStrokes(el, spec, aspect) {
+  const root = el.object3D, A = TRUNK_ATLAS;
+  let seed = 31; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  const im = new Image(); im.src = A.src;
+  const tex = new THREE.Texture(im); im.onload = () => { tex.needsUpdate = true; };
+  if ('colorSpace' in tex) tex.colorSpace = THREE.SRGBColorSpace;
   const loc = (px, py) => new THREE.Vector3(px / 800 - 0.5, aspect / 2 - py / 800, 0);
-  const mkTex = c => { const t = new THREE.CanvasTexture(c); if ('colorSpace' in t) t.colorSpace = THREE.SRGBColorSpace; return t; };
-  // le morceau arraché : la gravure découpée selon le bord déchiré, avec la tranche de fibres
-  const PK = 8, pc = document.createElement('canvas'); pc.width = Math.ceil(bw * PK); pc.height = Math.ceil(bh * PK);
-  const pg = pc.getContext('2d'); pg.imageSmoothingQuality = 'high';
-  pg.save(); tearTrace(pg, sh.pts, bx0, by0, PK); pg.clip();
-  pg.drawImage(img, bx0 * kImg, by0 * kImg, bw * kImg, bh * kImg, 0, 0, pc.width, pc.height); pg.restore();
-  pg.lineWidth = 0.7 * PK; pg.strokeStyle = 'rgba(248,246,240,.95)'; tearTrace(pg, sh.pts, bx0, by0, PK); pg.stroke();
-  tearFibers(pg, sh, bx0, by0, PK, true, rnd);
-  const pieceTex = mkTex(pc);
-  const geo = new THREE.PlaneGeometry(bw / 800, bh / 800);
-  const mat = new THREE.MeshBasicMaterial({ map: pieceTex, transparent: true, depthWrite: false, side: THREE.DoubleSide, opacity: 0 });
-  // charnière en haut du morceau : il se soulève par le bas, vers toi
-  const pivot = new THREE.Group(); pivot.position.copy(loc((bx0 + bx1) / 2, by0)); pivot.position.z = 0.002; root.add(pivot);
-  const piece = new THREE.Mesh(geo, mat); piece.position.y = -bh / 800 / 2; piece.renderOrder = 10; pivot.add(piece); pivot.visible = false;
-  const flyMat = new THREE.MeshBasicMaterial({ map: pieceTex, transparent: true, depthWrite: false, depthTest: false, side: THREE.DoubleSide });
-  const fly = new THREE.Mesh(geo, flyMat); fly.renderOrder = 30; fly.visible = false; root.add(fly);
-  // le trou et la fissure, sur un calque à plat
-  const HK = 1024 / 800, hc = document.createElement('canvas'); hc.width = 1024; hc.height = Math.round(1024 * aspect);
-  const hg = hc.getContext('2d'), holeTex = mkTex(hc);
-  const holeMat = new THREE.MeshBasicMaterial({ map: holeTex, transparent: true, depthWrite: false, opacity: 0 });
-  const hole = new THREE.Mesh(new THREE.PlaneGeometry(1, aspect), holeMat); hole.position.z = 0.0018; hole.renderOrder = 5; root.add(hole);
-  function drawHole(crack, open) {
-    hg.clearRect(0, 0, hc.width, hc.height);
-    const pts = sh.pts, n = pts.length;
-    if (open > 0) {
-      hg.save(); hg.globalAlpha = Math.min(1, open);
-      tearTrace(hg, pts, 0, 0, HK); hg.fillStyle = '#0b0a09'; hg.fill();       // l'ombre noire sous le papier
-      hg.lineWidth = 0.8 * HK; hg.strokeStyle = 'rgba(248,246,240,.9)'; hg.stroke();
-      let s2 = 5; tearFibers(hg, sh, 0, 0, HK, false, () => (s2 = (s2 * 16807) % 2147483647) / 2147483647);
-      hg.restore();
-    }
-    if (crack > 0 && open < 1) {
-      hg.save(); hg.strokeStyle = '#0b0a09'; hg.lineWidth = (0.8 + crack * 0.8) * HK; hg.lineJoin = 'miter';
-      const m = Math.floor(n * Math.min(1, crack));
-      for (let s = 0; s < 3; s++) {        // la fissure part de trois points à la fois
-        const st = Math.floor(n * s / 3), len = Math.floor(m / 3);
-        hg.beginPath();
-        for (let k = 0; k <= len; k++) { const [x, y] = pts[(st + k) % n]; k ? hg.lineTo(x * HK, y * HK) : hg.moveTo(x * HK, y * HK); }
-        hg.stroke();
-      }
-      hg.restore();
-    }
-    holeTex.needsUpdate = true;
-  }
-  drawHole(0, 0);
-
-  const sm = u => u <= 0 ? 0 : u >= 1 ? 1 : u * u * (3 - 2 * u), ease3 = u => u * u * u;
-  let c = 0, calm = 0, tl = null, done = {};
-  const cw = new THREE.Vector3(), rw = new THREE.Vector3(), fw = new THREE.Vector3(), rt = new THREE.Vector3(), up = new THREE.Vector3();
-  const fromW = new THREE.Vector3(), endW = new THREE.Vector3(), exitW = new THREE.Vector3(), tmp = new THREE.Vector3(), ws = new THREE.Vector3();
+  // un trait = un morceau de la gravure, à sa place exacte sur le tronc
+  const items = A.pieces.map(p => {
+    const [sx, sy, w, h] = p.src, [ax, ay] = p.at;
+    const geo = new THREE.PlaneGeometry(w / 800, h / 800), uv = geo.attributes.uv;
+    const u0 = ax / A.w, u1 = (ax + w) / A.w, v0 = 1 - (ay + h) / A.h, v1 = 1 - ay / A.h;
+    uv.setXY(0, u0, v1); uv.setXY(1, u1, v1); uv.setXY(2, u0, v0); uv.setXY(3, u1, v0); uv.needsUpdate = true;
+    const mat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthWrite: false, depthTest: false, side: THREE.DoubleSide, opacity: 0 });
+    const m = new THREE.Mesh(geo, mat); m.renderOrder = 20; m.visible = false; root.add(m);
+    return { m, mat, home: loc(sx + w / 2, sy + h / 2), len: Math.max(w, h) / 800 };
+  });
+  // les plus longs traits partent ensemble à la fin, droit sur l'objectif
+  const order = items.map((it, i) => i).sort((a, b) => items[b].len - items[a].len);
+  const burstSet = new Set(order.slice(0, spec.burstCount));
+  const sm = u => u <= 0 ? 0 : u >= 1 ? 1 : u * u * (3 - 2 * u);
+  let c = 0, tl = null;
   function restart(forceCalm) {
-    calm = forceCalm != null ? forceCalm : spec.calm[0] + Math.random() * (spec.calm[1] - spec.calm[0]);
-    let x = calm; tl = {};
-    for (const k of ['crack', 'peel', 'hush', 'lunge', 'hold', 'exit', 'stay', 'close']) { tl[k] = x; x += spec[k]; }
-    tl.end = x; c = 0; done = {};
-    pivot.visible = false; fly.visible = false; drawHole(0, 0); S.hush = false; S.hushSoft = false;
+    const calm = forceCalm != null ? forceCalm : spec.calm[0] + rnd() * (spec.calm[1] - spec.calm[0]);
+    tl = { stream: calm, hush: calm + spec.stream, burst: calm + spec.stream + spec.hush };
+    tl.end = tl.burst + spec.burstFlight + spec.burstHold + spec.exit + spec.rest;
+    c = 0; S.hush = false;
+    items.forEach((it, i) => {
+      it.m.visible = false; it.swished = false;
+      if (burstSet.has(i)) {
+        const a = rnd() * 6.28, r = 0.12 + rnd() * 0.5;
+        Object.assign(it, { burst: true, t0: tl.burst + rnd() * 0.06, dur: spec.burstFlight, ox: Math.cos(a) * r, oy: Math.sin(a) * r, spin: (rnd() - 0.5) * 1.5, fill: 0.8 + rnd() * 0.5 });
+      } else {
+        const a = rnd() * 6.28, r = 0.25 + rnd() * 0.85;
+        Object.assign(it, { burst: false, t0: tl.stream + Math.pow(rnd(), 0.7) * (spec.stream - 1.2), dur: 2.2 + rnd() * 1.1, ox: Math.cos(a) * r, oy: Math.sin(a) * r, spin: (rnd() - 0.5) * 5, fill: 0.35 + rnd() * 0.4 });
+      }
+    });
   }
   restart();
+  const cw = new THREE.Vector3(), rw = new THREE.Vector3(), ws = new THREE.Vector3(), fw = new THREE.Vector3(), rt = new THREE.Vector3(), up = new THREE.Vector3();
+  const homeW = new THREE.Vector3(), endW = new THREE.Vector3(), exitW = new THREE.Vector3(), tmp = new THREE.Vector3();
+  const look = new THREE.Object3D(), qHome = new THREE.Quaternion(), qRoot = new THREE.Quaternion();
+  let buzzed = false;
   return {
     restart,
-    isFree() { return c >= tl.crack && c < tl.stay; },
+    isFree() { return c >= tl.stream && c < tl.burst + spec.burstFlight + spec.burstHold + spec.exit; },
     tick(step, show) {
-      c += step; if (c >= tl.end) restart();
-      holeMat.opacity = show; mat.opacity = show;
-      const cam = el.sceneEl.camera;
-      if (c < tl.crack) return;
-      if (c < tl.peel) {                                     // le papier se fissure autour de l'œil
-        if (!done.crack) { done.crack = 1; tearCrackle(spec.crack, 0.6); S.hushSoft = true; }
-        drawHole((c - tl.crack) / spec.crack, 0);
-      } else if (c < tl.hush) {                              // il se soulève, le trou noir apparaît
-        if (!done.peel) { done.peel = 1; tearCrackle(spec.peel, 1); pivot.visible = true; }
-        const u = sm((c - tl.peel) / spec.peel);
-        drawHole(1, u); pivot.rotation.x = -0.7 * u; pivot.position.z = 0.002 + 0.012 * u;
-      } else if (c < tl.lunge) {                             // silence : il ne tient plus qu'à un fil
-        if (!done.hush) { done.hush = 1; S.hush = true; drawHole(1, 1); }
-        pivot.rotation.x = -0.7 + Math.sin(c * 26) * 0.03;
-      } else if (c < tl.stay) {                              // arraché : il fonce vers l'objectif
-        if (!cam) return;
-        if (!done.rip) {
-          done.rip = 1; tearRip(); try { navigator.vibrate && navigator.vibrate([90, 30, 220]); } catch (e) {}
-          piece.getWorldPosition(fromW); pivot.visible = false; fly.visible = true;
+      c += step; if (c >= tl.end) { restart(); buzzed = false; }
+      const cam = el.sceneEl.camera; if (!cam) return;
+      if (c >= tl.hush && c < tl.burst) S.hush = true;                 // le vent tombe juste avant
+      else if (c >= tl.burst + 0.8) S.hush = false;
+      if (c >= tl.burst && !buzzed) { buzzed = true; strokeImpact(); try { setTimeout(() => navigator.vibrate && navigator.vibrate([90, 30, 220]), 380); } catch (e) {} }
+      cam.getWorldPosition(cw); root.getWorldPosition(rw); root.getWorldScale(ws); root.getWorldQuaternion(qRoot);
+      const dWorld = cw.distanceTo(rw) || 1;
+      const dStop = Math.max(0.07, (cam.near || 0.01) * 2.5 / dWorld) * dWorld;
+      cam.getWorldDirection(fw);
+      const me = cam.matrixWorld.elements; rt.set(me[0], me[1], me[2]).normalize(); up.set(me[4], me[5], me[6]).normalize();
+      const visH = 2 * dStop * Math.tan((cam.fov || 50) * Math.PI / 360), visW = visH * (cam.aspect || 0.5);
+      for (const it of items) {
+        const hold = it.burst ? spec.burstHold : 0;
+        const u = (c - it.t0) / it.dur, total = (it.dur + hold + spec.exit) / it.dur;
+        if (u <= 0 || u >= total) { it.m.visible = false; continue; }
+        it.m.visible = true;
+        homeW.copy(it.home); homeW.z = 0.003; root.localToWorld(homeW);
+        endW.copy(cw).addScaledVector(fw, dStop).addScaledVector(rt, it.ox * visW * 0.5).addScaledVector(up, it.oy * visH * 0.5);
+        const big = (visW * it.fill) / (it.len * ws.x);
+        let e, sc, op = 1;
+        if (u < 1) {                                  // il se détache du tronc, puis accélère vers toi
+          e = Math.pow(u, 2.6); tmp.copy(homeW).lerp(endW, e);
+          tmp.addScaledVector(fw, -Math.sin(Math.PI * Math.min(1, u * 3)) * 0.01 * dWorld * (1 - e));
+          sc = 1 + (big - 1) * e;
+          if (!it.burst && !it.swished && u > 0.55 && Math.abs(it.ox) < 1.1 && rnd() < 0.5) { it.swished = true; strokeSwish(it.dur * 0.45, 0.25, 500, 2600); }
+        } else if (u < 1 + hold / it.dur) {           // nez à nez : il tremble devant l'objectif
+          e = 1; tmp.copy(endW).addScaledVector(rt, Math.sin(c * 47) * 0.01 * visW).addScaledVector(up, Math.cos(c * 41) * 0.01 * visH); sc = big;
+        } else {                                      // il passe derrière toi
+          const v = (u - 1 - hold / it.dur) / (spec.exit / it.dur);
+          e = 1; exitW.copy(endW).addScaledVector(fw, -dStop * 1.3).addScaledVector(rt, it.ox * visW * 0.6).addScaledVector(up, it.oy * visH * 0.6);
+          tmp.copy(endW).lerp(exitW, v); sc = big * (1 + 0.5 * v); op = 1 - v;
         }
-        cam.getWorldPosition(cw); root.getWorldPosition(rw); root.getWorldScale(ws);
-        const dWorld = cw.distanceTo(rw) || 1;
-        const dStop = Math.max(0.075, (cam.near || 0.01) * 2.5 / dWorld) * dWorld;
-        cam.getWorldDirection(fw);
-        const me = cam.matrixWorld.elements; rt.set(me[0], me[1], me[2]).normalize(); up.set(me[4], me[5], me[6]).normalize();
-        endW.copy(cw).addScaledVector(fw, dStop).addScaledVector(up, -dStop * 0.05);
-        // taille pour qu'il déborde de l'écran une fois devant l'objectif
-        const visH = 2 * dStop * Math.tan((cam.fov || 50) * Math.PI / 360), visW = visH * (cam.aspect || 0.5);
-        const big = (visW * spec.fill) / (bw / 800 * ws.x);
-        let p, sc, op = 1, jx = 0, jy = 0, rz = 0;
-        if (c < tl.hold) { const u = (c - tl.lunge) / spec.lunge; p = ease3(u); sc = 1 + (big - 1) * p; tmp.copy(fromW).lerp(endW, p); rz = -0.15 * p; }
-        else if (c < tl.exit) { const u = (c - tl.hold) / spec.hold; sc = big * (1 + 0.015 * Math.sin(u * 20)); tmp.copy(endW); rz = -0.15 + Math.sin(u * 31) * 0.03;
-          jx = Math.sin(u * 47) * 0.012 * dStop; jy = Math.cos(u * 41) * 0.01 * dStop; tmp.addScaledVector(rt, jx).addScaledVector(up, jy); }
-        else { const u = Math.min(1, (c - tl.exit) / spec.exit); exitW.copy(cw).addScaledVector(fw, -dStop * 0.3); tmp.copy(endW).lerp(exitW, u); sc = big * (1 + 0.6 * u); op = 1 - u; rz = -0.15; }
-        root.worldToLocal(tmp); fly.position.copy(tmp);
-        fly.scale.setScalar(sc); fly.lookAt(cw); fly.rotateZ(rz);
-        flyMat.opacity = op * show;
-      } else {                                              // le trou reste, puis se referme
-        if (!done.rest) { done.rest = 1; fly.visible = false; S.hush = false; S.hushSoft = false; }
-        if (c >= tl.close) { const u = sm((c - tl.close) / spec.close); drawHole(1 - u, 1 - u); }
+        root.worldToLocal(tmp); it.m.position.copy(tmp);
+        // orientation : à plat sur la gravure au départ, puis face à toi
+        look.position.copy(tmp); look.lookAt(root.worldToLocal(tmp.copy(cw)));
+        qHome.identity(); it.m.quaternion.copy(qHome).slerp(look.quaternion, sm(e * 1.6));
+        it.m.rotateZ(it.spin * e);
+        it.m.scale.setScalar(sc);
+        it.mat.opacity = op * show * sm(u * 8);
       }
     }
   };
@@ -1071,7 +1000,7 @@ AFRAME.registerComponent('rafi-v2', {
       const span = 1, cv = document.createElement('canvas'); cv.width = 1536; cv.height = Math.round(1536 * S.aspect);
       addLayer(makeSplats(cv, D.splats, S.aspect, span), cv, 1 + 2 * span, S.aspect * (1 + 2 * span), ext / 2, 0);
     }
-    if (D.tear) this.tear = makeTear(this.el, D.tear, S.img, S.aspect);
+    if (D.strokes) this.tear = makeStrokes(this.el, D.strokes, S.aspect);
     if (D.scratches) {
       const cv = document.createElement('canvas'); cv.width = 1024; cv.height = Math.round(1024 * S.aspect);
       addLayer(makeScratches(cv, D.scratches), cv, 1, S.aspect, ext / 2, 0);
